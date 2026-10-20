@@ -195,7 +195,15 @@
   * Blok 3 tanda tangan dikunci selalu horizontal sejajar (`repeat(3, 1fr)`) baik dicetak dari Laptop maupun ponsel HP.
   * Isolasi media query responsif HP dengan `@media screen and (max-width: 768px)` agar aturan tampilan mobile tidak bocor ke mesin cetak.
   * Kompaktifikasi padding, font-size, dan batas tanda tangan (26px) dengan `page-break-inside: avoid` sehingga seluruh form (7–19 item) pas tepat dalam 1 lembar halaman.
-
+- v1.6.0: Audit & Perbaikan Responsif Desktop + Mobile (7 Fix):
+  * Metric Cards selalu 3 kolom sejajar di semua ukuran layar, menghapus inkonsistensi layout.
+  * Task Table di HP diubah dari horizontal-scroll menjadi stacked card layout per item (tanpa scroll horizontal).
+  * Print Area Detail dibungkus `overflow-x: auto` di HP dengan `word-break: break-word`.
+  * Tombol aksi Detail Page disusun ulang dengan CSS Grid (Kembali full-width di atas, Cetak PDF & Export Excel sejajar).
+  * Signatures Grid selalu 3 kolom di semua viewport (konsisten dengan standar form resmi).
+  * `.mobile-cards-list` di-hidden eksplisit di desktop untuk mencegah duplikat.
+  * Print Info Grid responsif: 2 kolom rata di HP, 1 kolom di ≤400px.
+  * Proteksi cetak: Reset `@media print` agar stacked-card CSS mobile tidak bocor ke output cetak.
 
 
 
