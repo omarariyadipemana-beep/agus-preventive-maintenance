@@ -20,10 +20,12 @@
 
 ### 3. Arsitektur & Lingkungan Kerja
 - **Frontend**: HTML + CSS + JavaScript (Single Page Application)
-- **Backend**: Node.js + Express.js
-- **Database**: SQLite (better-sqlite3)
-- **Akses**: Multi-user via LAN (server Node.js diakses dari perangkat lain)
-- **Arsitektur**: Monolith (1 server, 1 database file)
+- **Backend**: Node.js + Express.js (Local LAN) & Vercel Serverless Function (Cloud)
+- **Database**: SQLite (better-sqlite3 untuk LAN) & Supabase PostgreSQL (Cloud)
+- **Akses & Deployment**: 
+  * Local: Multi-user via LAN (port 3001)
+  * Production Live URL: **`https://formmaintenance.vercel.app`**
+- **Arsitektur**: Dual-stack (Monolith LAN & Cloud Serverless)
 
 ### 4. Alur Kerja Aplikasi (User Flow)
 1. Buka aplikasi → tampil **Dashboard** (ringkasan inspeksi bulan ini)
@@ -222,6 +224,7 @@
   * Pengadopsian palet Electric Violet (`#7c3aed`), Vibrant Cyan (`#06b6d4`), Coral Red (`#f43f5e`), dan kanvas Soft Lavender (`#f8f9ff`).
   * Desain sidebar desktop Deep Indigo, bottom navbar mobile putih bersih (*Clean White*), kartu metrik bergaya e-wallet, dan bar progres bergradasi Cyan-Violet.
   * Tetap menjaga isolasi cetak A4 100% formal pabrik.
+  * Domain aktif produksi resmi diperbarui menjadi: **`https://formmaintenance.vercel.app`**.
 
 
 

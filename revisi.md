@@ -8,4 +8,6 @@
   6. **Buttons & Form Toggles:** Tombol primer bergradasi Electric Violet dengan bayangan mewah; toggle status OK menggunakan Cyan toska dan NOT OKE menggunakan Coral Red.
   7. **PIN Overlay:** Tampilan keypad dan indikator PIN bernuansa Violet-Cyan modern.
   8. **Proteksi Cetak A4:** Cetak PDF 1 halaman A4 tetap 100% monokrom/formal pabrik via isolasi `@media print`.
+- Pembaruan Domain Produksi Vercel:
+  * Domain aktif produksi resmi diperbarui menjadi: **`https://formmaintenance.vercel.app`**
 - Seluruh spesifikasi telah disinkronkan ke zona bawah `prd.md`.
