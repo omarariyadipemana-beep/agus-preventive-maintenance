@@ -1,10 +1,9 @@
-# Riwayat Revisi Terakhir: v1.7.0 (SELESAI DITERAPKAN)
-- Dashboard Interaktif: Temuan NOT OKE & Drill-down Peringatan:
-  1. **Backend API (`server.js` & `api/index.js`):** Query item berstatus `NOT OKE` bulan ini dengan join informasi inspeksi (ID Alat, Mesin, Form ID, No Item, Task, Remarks).
-  2. **Interactive Findings Widget (`public/index.html` & `app.js`):**
-     - Jika ada temuan NOK: menampilkan kartu peringatan dengan pulse badge, badge mesin, deskripsi task, kotak alasan NOT OKE yang kontras, serta tombol pintas "Buka Form Inspeksi" ke detail terkait.
-     - Jika 100% OK: menampilkan banner perayaan hijau ramah "Seluruh Item Checklist OK (100% Siap Operasi)".
-  3. **Progress Bar Drill-down:** Bar warna merah dan legend NOT OKE dapat diklik untuk otomatis scroll halus dan memberi animasi kilau (flash highlight) ke kartu temuan.
-  4. **Responsif Desktop & Mobile:** Grid 2 kolom di layar PC/Laptop dan otomatis 1 kolom rapat di layar ponsel.
-  5. **Self-check:** Mengeliminasi duplikasi identifier `Database` pada `server.js` dan memvalidasi kebersihan syntax node.
+# Riwayat Revisi Terakhir: v1.8.0 (SELESAI DITERAPKAN)
+- Transformasi Halaman Detail Inspeksi di HP (Konsep A: Mobile Card / Row View):
+  1. **Eliminasi Teks Terpotong Vertikal:** Di layar ponsel (<= 768px), tabel kaku 4 kolom `.print-table` ditransformasikan menjadi tampilan baris kartu (Card/Row view) yang lega.
+  2. **Struktur Baris Kartu Mobile:**
+     - Nomor item (`Item #1`) sejajar dengan Status Badge (`OK` hijau atau `NOT OKE` merah) di pojok kanan atas.
+     - Deskripsi task list melebar 100% horizontal (`line-height: 1.55`, `font-size: 0.8125rem`) tanpa terpecah per huruf.
+     - Kotak catatan / Remarks tampil rapi di bagian bawah item.
+  3. **Garansi Proteksi Cetak A4:** Seluruh aturan kartu mobile di-reset secara total di `@media print` (`display: table`, `table-row`, `table-cell`), sehingga fungsi Cetak PDF 1 halaman A4 tetap 100% identik dengan formulir fisik.
 - Seluruh spesifikasi telah disinkronkan ke zona bawah `prd.md`.

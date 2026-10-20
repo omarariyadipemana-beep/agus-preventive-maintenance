@@ -210,6 +210,12 @@
   * State 100% OK: Banner perayaan hijau jika seluruh item checklist dalam kondisi OK.
   * Interaktivitas Progress Bar: Bagian merah & legend NOT OKE dapat diklik untuk auto-scroll dan memberi animasi kilau ke temuan.
   * Sinkronisasi data real-time baik pada backend SQLite (`server.js`) maupun Vercel + Supabase (`api/index.js`).
+- v1.8.0: Transformasi Halaman Detail Inspeksi di HP (Konsep A: Mobile Card / Row View):
+  * Di layar HP (<= 768px), tabel 4 kolom `.print-table` ditransformasikan menjadi Card/Row view yang lega per item.
+  * Nomor item dan Status Badge berdampingan di baris atas, deskripsi task melebar 100% (anti-pecah kata per huruf).
+  * Catatan / Remarks tampil sebagai kotak catatan minimalis di bawah task.
+  * Output Cetak A4 tetap 100% terjaga sebagai tabel lembar kerja resmi via reset komprehensif di `@media print`.
+
 
 
 

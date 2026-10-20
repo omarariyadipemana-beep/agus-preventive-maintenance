@@ -1766,39 +1766,127 @@ a:hover { text-decoration: underline; }
     gap: var(--space-2);
   }
 
-  /* FIX #3: Print Area — tabel scrollable di HP, bukan overflow */
+  /* KONSEP A: Transformasi Detail Inspeksi di HP ke Mobile Card/Row View */
   .print-area {
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     overflow: hidden;
-  }
-
-  .print-area .print-table {
-    display: block;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .print-area .print-table thead,
-  .print-area .print-table tbody,
-  .print-area .print-table tr,
-  .print-area .print-table th,
-  .print-area .print-table td {
-    /* Keep table structure but allow scroll */
+    background: var(--white);
   }
 
   .print-table {
-    min-width: 420px;
+    display: block;
+    width: 100%;
+    min-width: 0 !important;
   }
 
-  .print-table td {
-    font-size: var(--font-xs);
-    padding: var(--space-2) var(--space-3);
-    word-break: break-word;
+  .print-table thead {
+    display: none !important; /* Sembunyikan header 4-kolom kaku di HP */
   }
 
-  .print-table th {
+  .print-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: var(--slate-100);
+  }
+
+  .print-table tbody tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: 
+      "num status"
+      "desc desc"
+      "remarks remarks";
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3) var(--space-4);
+    gap: 4px 8px;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+  }
+
+  /* No / Item Order */
+  .print-table td:first-child {
+    grid-area: num;
+    border: none;
+    padding: 0;
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: var(--slate-500);
+    text-align: left;
+    display: flex;
+    align-items: center;
+  }
+
+  .print-table td:first-child::before {
+    content: 'Item #';
     font-size: 0.6875rem;
-    padding: var(--space-2) var(--space-3);
+    color: var(--slate-400);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  /* Task Description — Melebar Penuh 100%, Huruf Nyaman Dibaca */
+  .print-table td:nth-child(2) {
+    grid-area: desc;
+    border: none;
+    padding: 4px 0 6px 0;
+    font-size: var(--font-sm);
+    line-height: 1.55;
+    color: var(--slate-900);
+    font-weight: 500;
+    word-break: normal !important;
+    overflow-wrap: break-word;
+  }
+
+  /* Status Badge (OK / NOT OKE) — Pojok Kanan Atas Sejajar Nomor Item */
+  .print-table .detail-status {
+    grid-area: status;
+    border: none;
+    padding: 2px 10px;
+    justify-self: end;
+    font-size: 0.6875rem;
+    font-weight: 800;
+    border-radius: var(--radius-full);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .print-table .detail-status.s-ok {
+    background: var(--emerald-50);
+    color: var(--emerald-700);
+    border: 1px solid var(--emerald-200);
+  }
+
+  .print-table .detail-status.s-nok {
+    background: var(--rose-50);
+    color: var(--rose-700);
+    border: 1px solid var(--rose-200);
+  }
+
+  /* Keterangan / Remarks Box */
+  .print-table td:nth-child(4) {
+    grid-area: remarks;
+    border: none;
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    color: var(--slate-600);
+    background: var(--slate-50);
+    border: 1px dashed var(--slate-200);
+    border-radius: var(--radius-sm);
+    display: block;
+    line-height: 1.4;
+  }
+
+  .print-table td:nth-child(4)::before {
+    content: 'Catatan: ';
+    font-weight: 700;
+    color: var(--slate-500);
+    font-size: 0.6875rem;
   }
 
   /* FIX #7: Print Info Grid — 2 kolom rata di HP */
@@ -2231,6 +2319,15 @@ body.role-user .btn-icon[title="Hapus"] {
   .task-table tbody { display: table-row-group !important; }
   .task-table tbody tr { display: table-row !important; }
   .task-table td { display: table-cell !important; }
+
+  /* Reset print-table from mobile card layout back to real table */
+  .print-table { display: table !important; width: 100% !important; min-width: 0 !important; }
+  .print-table thead { display: table-header-group !important; }
+  .print-table tbody { display: table-row-group !important; padding: 0 !important; background: transparent !important; }
+  .print-table tbody tr { display: table-row !important; padding: 0 !important; background: transparent !important; border: none !important; box-shadow: none !important; }
+  .print-table td { display: table-cell !important; border: 1px solid #cbd5e1 !important; padding: 2.5px 5px !important; }
+  .print-table td:first-child::before,
+  .print-table td:nth-child(4)::before { display: none !important; }
 
   *, *::before, *::after {
     box-sizing: border-box !important;
