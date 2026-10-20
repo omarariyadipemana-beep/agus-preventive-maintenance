@@ -1796,6 +1796,20 @@ a:hover { text-decoration: underline; }
   .print-signatures {
     grid-template-columns: repeat(3, 1fr);
     gap: var(--space-2);
+    padding: var(--space-4) var(--space-3) var(--space-5);
+  }
+
+  .print-signatures .sig-title {
+    font-size: 0.6875rem;
+  }
+
+  .print-signatures .sig-line {
+    width: 75px;
+    margin-top: var(--space-6);
+  }
+
+  .print-signatures .sig-name {
+    font-size: var(--font-xs);
   }
 
   /* KONSEP A: Transformasi Detail Inspeksi di HP ke Mobile Card/Row View */
