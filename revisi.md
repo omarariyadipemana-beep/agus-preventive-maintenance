@@ -20,3 +20,6 @@
 - Fungsi navigasi dan ikon menu lainnya tetap tidak berubah.
 - Validasi format berhasil dengan `git diff --check`.
 
+# Revisi v2.0.3: Penambahan Favicon (SELESAI DITERAPKAN)
+- Ikon Icons8 ditambahkan sebagai favicon pada tab browser.
+- Sumber ikon: https://img.icons8.com/?size=80&id=J5OHINhSdwbD&format=png`r
