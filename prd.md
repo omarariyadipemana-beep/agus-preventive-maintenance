@@ -166,7 +166,7 @@
 - Mode: Monolith
 - Server: localhost:3001 (bisa diakses LAN via IP port 3001)
 - Database: ./database.sqlite
-- Tipe Mesin Aktif:
+- Tipe Peralatan Aktif:
   1. GTP-GIGA (19 tasks)
   2. PC / PCA (11 tasks)
   3. AIPS (13 tasks)

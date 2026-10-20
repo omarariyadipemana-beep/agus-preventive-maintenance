@@ -144,7 +144,7 @@
           </div>
           <div class="card-body-grid">
             <div class="card-field">
-              <span class="card-label">Tipe Mesin</span>
+              <span class="card-label">Tipe Peralatan</span>
               <span class="card-val">${esc(row.machine_type)}</span>
             </div>
             <div class="card-field">
@@ -283,14 +283,14 @@
     }
 
     const select = $('#machineType');
-    select.innerHTML = '<option value="">— Pilih Tipe Mesin —</option>';
+    select.innerHTML = '<option value="">— Pilih Tipe Peralatan —</option>';
     state.machineTypes.forEach(t => {
       select.innerHTML += '<option value="' + esc(t) + '">' + esc(t) + '</option>';
     });
 
     // Also populate filter
     const filterSel = $('#filterMachineType');
-    filterSel.innerHTML = '<option value="">Semua Tipe Mesin</option>';
+    filterSel.innerHTML = '<option value="">Semua Tipe Peralatan</option>';
     state.machineTypes.forEach(t => {
       filterSel.innerHTML += '<option value="' + esc(t) + '">' + esc(t) + '</option>';
     });
@@ -578,7 +578,7 @@
           </div>
           <div class="card-body-grid">
             <div class="card-field">
-              <span class="card-label">Tipe Mesin</span>
+              <span class="card-label">Tipe Peralatan</span>
               <span class="card-val">${esc(row.machine_type)}</span>
             </div>
             <div class="card-field">

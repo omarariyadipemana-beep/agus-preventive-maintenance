@@ -11,3 +11,12 @@
 - Pembaruan Domain Produksi Vercel:
   * Domain aktif produksi resmi diperbarui menjadi: **`https://formmaintenance.vercel.app`**
 - Seluruh spesifikasi telah disinkronkan ke zona bawah `prd.md`.
+
+---
+
+# Revisi v2.0.1: Penggantian Label Tipe Mesin (SELESAI DITERAPKAN)
+- Seluruh label tampilan `Tipe Mesin` telah diganti menjadi `Tipe Peralatan`.
+- Area yang diperbarui: form inspeksi, tabel inspeksi terbaru, tabel riwayat, kartu responsif, dropdown pilihan, dan filter.
+- Nama field database/API `machine_type` tetap dipertahankan agar kompatibel dengan data lama.
+- Dokumentasi Master Context di `prd.md` telah diselaraskan.
+- Validasi berhasil: tidak ada teks `Tipe Mesin` tersisa di `public/index.html`, `public/app.js`, dan `prd.md`.
