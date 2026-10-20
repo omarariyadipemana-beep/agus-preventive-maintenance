@@ -22,7 +22,7 @@
 
 # Revisi v2.0.3: Penambahan Favicon (SELESAI DITERAPKAN)
 - Ikon Icons8 ditambahkan sebagai favicon pada tab browser.
-- Sumber ikon: https://img.icons8.com/?size=80&id=J5OHINhSdwbD&format=png`r
+- Sumber ikon: https://img.icons8.com/?size=80&id=J5OHINhSdwbD&format=png
 
 ---
 
@@ -35,3 +35,9 @@
 - **6. Sanitasi Search Filter:** Input parameter pencarian pada integrasi Supabase dibersihkan dari karakter manipulasi filter.
 - **7. Proteksi Error Leakage:** Pesan error internal sistem tidak lagi diekspos ke client publik.
 - **8. Skema RLS Supabase:** Menambahkan definisi kebijakan Row Level Security pada supabase_schema.sql.
+
+---
+
+# Revisi v2.1.1: Pembersihan Tampilan PIN & String Literal Head (SELESAI DITERAPKAN)
+- Menghapus tampilan bocoran PIN (`Role akses: User / Admin`) pada modal login di public/index.html.
+- Menghapus karakter sisa `r`n pada tag link favicon di public/index.html yang merender teks di atas halaman.
