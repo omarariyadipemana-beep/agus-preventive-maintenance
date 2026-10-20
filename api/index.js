@@ -3,8 +3,10 @@ const { createClient } = require('@supabase/supabase-js');
 const ExcelJS = require('exceljs');
 require('dotenv').config();
 
+const path = require('path');
 const app = express();
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Inisialisasi Supabase Client
 const supabaseUrl = process.env.SUPABASE_URL;
@@ -398,6 +400,11 @@ app.get('/api/inspections/:id/excel', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// Serve frontend SPA fallback for non-API routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
 // Export handler for Vercel Serverless

@@ -16,3 +16,5 @@ database.sqlite-wal
 Thumbs.db
 .vscode/
 .idea/
+
+.vercel

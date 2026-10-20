@@ -10,10 +10,17 @@ const PORT = 3001;
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Database setup
-const db = new Database(path.join(__dirname, 'database.sqlite'));
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+let Database = null;
+let db = null;
+try {
+  Database = require('better-sqlite3');
+  db = new Database(path.join(__dirname, 'database.sqlite'));
+  db.pragma('journal_mode = WAL');
+  db.pragma('foreign_keys = ON');
+} catch (e) {
+  // Running in cloud serverless environment where SQLite binary is absent
+  console.log('SQLite not available in this environment (likely Vercel Serverless).');
+}
 
 // ============================================================
 // DATABASE INITIALIZATION
@@ -164,7 +171,9 @@ function initDatabase() {
   }
 }
 
-initDatabase();
+if (db) {
+  initDatabase();
+}
 
 // ============================================================
 // API ROUTES
