@@ -107,8 +107,11 @@
     const tbody = $('#recentTableBody');
     const empty = $('#recentEmpty');
 
+    const cardsList = $('#recentCardsList');
+
     if (!data.recentInspections || data.recentInspections.length === 0) {
       tbody.innerHTML = '';
+      if (cardsList) cardsList.innerHTML = '';
       empty.style.display = 'flex';
       return;
     }
@@ -128,6 +131,41 @@
         </td>
       </tr>
     `).join('');
+
+    if (cardsList) {
+      cardsList.innerHTML = data.recentInspections.map(row => `
+        <div class="inspection-card">
+          <div class="card-top">
+            <span class="card-form-id">${esc(row.form_id)}</span>
+            ${verificationBadge(row.verification_result)}
+          </div>
+          <div class="card-body-grid">
+            <div class="card-field">
+              <span class="card-label">Tipe Mesin</span>
+              <span class="card-val">${esc(row.machine_type)}</span>
+            </div>
+            <div class="card-field">
+              <span class="card-label">ID Alat</span>
+              <span class="card-val">${esc(row.equipment_id)}</span>
+            </div>
+            <div class="card-field">
+              <span class="card-label">Lokasi</span>
+              <span class="card-val">${esc(row.location || '-')}</span>
+            </div>
+            <div class="card-field">
+              <span class="card-label">Tanggal</span>
+              <span class="card-val">${formatDate(row.inspection_date)}</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-outline" onclick="viewDetail(${row.id})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <span>Detail & Cetak</span>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
   }
 
   // ============================================================
@@ -215,24 +253,46 @@
       const detail = parts.slice(1).join(':').trim();
 
       return `
-        <tr>
+        <tr id="task_row_${task.item_no}">
           <td>${task.item_no}</td>
           <td class="task-desc"><strong>${esc(category)}</strong>${detail ? ' : ' + esc(detail) : ''}</td>
           <td>
             <div class="status-radios">
-              <input type="radio" class="status-radio" name="status_${task.item_no}" id="ok_${task.item_no}" value="OK">
-              <label for="ok_${task.item_no}" class="status-label label-ok">OK</label>
-              <input type="radio" class="status-radio" name="status_${task.item_no}" id="nok_${task.item_no}" value="NOT OKE">
-              <label for="nok_${task.item_no}" class="status-label label-nok">NOT OKE</label>
+              <input type="radio" class="status-radio" name="status_${task.item_no}" id="ok_${task.item_no}" value="OK" onchange="onTaskStatusChange(${task.item_no}, 'OK')">
+              <label for="ok_${task.item_no}" class="status-label label-ok">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg>
+                <span>OK</span>
+              </label>
+
+              <input type="radio" class="status-radio" name="status_${task.item_no}" id="nok_${task.item_no}" value="NOT OKE" onchange="onTaskStatusChange(${task.item_no}, 'NOT OKE')">
+              <label for="nok_${task.item_no}" class="status-label label-nok">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <span>NOT OKE</span>
+              </label>
             </div>
           </td>
           <td>
-            <input type="text" class="task-remark-input" data-item="${task.item_no}" placeholder="Keterangan...">
+            <input type="text" class="task-remark-input" id="remark_${task.item_no}" data-item="${task.item_no}" placeholder="Keterangan (opsional)...">
           </td>
         </tr>
       `;
     }).join('');
   }
+
+  // Handle live toggle between OK and NOT OKE
+  window.onTaskStatusChange = function(itemNo, status) {
+    const remarkInput = $(`#remark_${itemNo}`);
+    if (!remarkInput) return;
+
+    if (status === 'NOT OKE') {
+      remarkInput.classList.add('required-nok');
+      remarkInput.placeholder = '* Wajib isi alasan NOT OKE...';
+      remarkInput.focus();
+    } else {
+      remarkInput.classList.remove('required-nok');
+      remarkInput.placeholder = 'Keterangan (opsional)...';
+    }
+  };
 
   // Form submission
   $('#inspectionForm').addEventListener('submit', async function(e) {
@@ -256,31 +316,46 @@
       return;
     }
 
-    // Collect task items
+    // Collect and validate task items
     const taskRows = $$('#taskTableBody tr');
     const items = [];
     let allFilled = true;
+    let missingRemarkItem = null;
 
     taskRows.forEach((row, i) => {
       const itemNo = i + 1;
       const statusRadio = document.querySelector(`input[name="status_${itemNo}"]:checked`);
-      const remarkInput = row.querySelector('.task-remark-input');
+      const remarkInput = $(`#remark_${itemNo}`);
+      const remarkVal = remarkInput ? remarkInput.value.trim() : '';
       const taskDesc = row.querySelector('.task-desc').textContent;
 
       if (!statusRadio) {
         allFilled = false;
+      } else if (statusRadio.value === 'NOT OKE' && !remarkVal) {
+        if (!missingRemarkItem) {
+          missingRemarkItem = { itemNo, input: remarkInput, row };
+        }
       }
 
       items.push({
         item_no: itemNo,
         task_description: taskDesc,
         status: statusRadio ? statusRadio.value : '',
-        remarks: remarkInput ? remarkInput.value.trim() : ''
+        remarks: remarkVal
       });
     });
 
     if (!allFilled) {
-      showToast('Semua status task harus diisi (OK / NOT OKE)', 'error');
+      showToast('Semua status task harus dipilih (OK / NOT OKE)', 'error');
+      return;
+    }
+
+    // Strict validation: NOT OKE requires remark
+    if (missingRemarkItem) {
+      showToast(`Task No. ${missingRemarkItem.itemNo} (NOT OKE) wajib diisi keterangannya!`, 'error');
+      missingRemarkItem.input.classList.add('required-nok');
+      missingRemarkItem.input.focus();
+      missingRemarkItem.row.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
@@ -360,9 +435,11 @@
   function renderHistory(data) {
     const tbody = $('#historyTableBody');
     const empty = $('#historyEmpty');
+    const cardsList = $('#historyCardsList');
 
     if (!data.data || data.data.length === 0) {
       tbody.innerHTML = '';
+      if (cardsList) cardsList.innerHTML = '';
       empty.style.display = 'flex';
       $('#pagination').innerHTML = '';
       return;
@@ -389,6 +466,45 @@
         </td>
       </tr>
     `).join('');
+
+    if (cardsList) {
+      cardsList.innerHTML = data.data.map(row => `
+        <div class="inspection-card">
+          <div class="card-top">
+            <span class="card-form-id">${esc(row.form_id)}</span>
+            ${verificationBadge(row.verification_result)}
+          </div>
+          <div class="card-body-grid">
+            <div class="card-field">
+              <span class="card-label">Tipe Mesin</span>
+              <span class="card-val">${esc(row.machine_type)}</span>
+            </div>
+            <div class="card-field">
+              <span class="card-label">ID Alat</span>
+              <span class="card-val">${esc(row.equipment_id)}</span>
+            </div>
+            <div class="card-field">
+              <span class="card-label">Lokasi</span>
+              <span class="card-val">${esc(row.location || '-')}</span>
+            </div>
+            <div class="card-field">
+              <span class="card-label">Tanggal</span>
+              <span class="card-val">${formatDate(row.inspection_date)}</span>
+            </div>
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-outline" onclick="viewDetail(${row.id})">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              <span>Detail & Cetak</span>
+            </button>
+            <button class="btn btn-ghost btn-danger" onclick="deleteInspection(${row.id}, '${esc(row.form_id)}')">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3,6 5,6 21,6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+              <span>Hapus</span>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
 
     // Pagination
     const totalPages = Math.ceil(data.total / data.limit);

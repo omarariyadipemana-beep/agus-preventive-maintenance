@@ -186,5 +186,10 @@
   * DDL skema database PostgreSQL di `supabase_schema.sql` (tabel, relasi cascade, indeks performa, seed 4 mesin).
   * Vercel Serverless Function Express di `api/index.js` menggunakan `@supabase/supabase-js`.
   * Konfigurasi deployment di `vercel.json` dan `.gitignore`.
+- v1.4.0: Optimalisasi UI Mobile, Tombol Status Modern & Validasi NOT OKE:
+  * Tombol OK/NOT OKE diubah menjadi segmented toggle modern dengan ikon SVG (centang/silang) dan touch-target 44px ramah jempol.
+  * Tampilan Riwayat di HP otomatis beralih menjadi Responsive Card View (bebas overflow/teks kepotong).
+  * Validasi ketat: jika memilih NOT OKE, kolom keterangan wajib diisi alasan, input otomatis disorot merah dan fokus, serta submit diblokir jika kosong.
+
 
 

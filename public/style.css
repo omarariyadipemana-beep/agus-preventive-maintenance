@@ -797,11 +797,15 @@ a:hover { text-decoration: underline; }
   color: var(--slate-800);
 }
 
-/* Status radio group in task table */
+/* Status segmented toggle button in task table */
 .status-radios {
-  display: flex;
-  gap: var(--space-1);
-  justify-content: center;
+  display: inline-flex;
+  gap: 6px;
+  background: var(--slate-100);
+  padding: 4px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--slate-200);
+  user-select: none;
 }
 
 .status-radio {
@@ -812,51 +816,93 @@ a:hover { text-decoration: underline; }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 12px;
-  border-radius: var(--radius-full);
+  gap: 5px;
+  min-width: 58px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: var(--radius-md);
   font-size: var(--font-xs);
   font-weight: 700;
   cursor: pointer;
-  border: 1.5px solid var(--slate-300);
-  color: var(--slate-400);
-  transition: all var(--transition-base);
+  background: transparent;
+  color: var(--slate-500);
+  border: 1px solid transparent;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  user-select: none;
+  letter-spacing: 0.03em;
+}
+
+.status-label svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.5;
+  transition: transform 0.2s ease;
 }
 
 .status-label:hover {
-  border-color: var(--slate-400);
-  color: var(--slate-600);
+  color: var(--slate-800);
+  background: rgba(255, 255, 255, 0.6);
 }
 
+/* Checked OK */
 .status-radio:checked + .status-label.label-ok {
-  background: var(--emerald-50);
-  border-color: var(--emerald-500);
-  color: var(--emerald-700);
+  background: var(--emerald-600);
+  color: var(--white);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.35);
+  border-color: var(--emerald-600);
 }
 
+.status-radio:checked + .status-label.label-ok svg {
+  transform: scale(1.15);
+}
+
+/* Checked NOT OKE */
 .status-radio:checked + .status-label.label-nok {
-  background: var(--rose-50);
-  border-color: var(--rose-500);
-  color: var(--rose-600);
+  background: var(--rose-600);
+  color: var(--white);
+  box-shadow: 0 2px 8px rgba(244, 63, 94, 0.35);
+  border-color: var(--rose-600);
+  animation: pulseNok 0.3s ease;
+}
+
+.status-radio:checked + .status-label.label-nok svg {
+  transform: scale(1.15);
+}
+
+@keyframes pulseNok {
+  0% { transform: scale(0.95); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
 .task-remark-input {
   width: 100%;
-  padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--slate-200);
-  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  border: 1.5px solid var(--slate-200);
+  border-radius: var(--radius-md);
   font-family: var(--font-family);
   font-size: var(--font-sm);
   color: var(--slate-700);
   background: var(--white);
   outline: none;
-  transition: border-color var(--transition-base);
+  transition: all var(--transition-base);
 }
 
 .task-remark-input:focus {
   border-color: var(--navy-500);
+  box-shadow: 0 0 0 3px rgba(59, 91, 219, 0.1);
+}
+
+/* Highlighted required state when NOT OKE is selected */
+.task-remark-input.required-nok {
+  border-color: var(--rose-500) !important;
+  background-color: #fff5f5 !important;
+  box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.12) !important;
+}
+
+.task-remark-input.required-nok::placeholder {
+  color: var(--rose-400);
+  font-weight: 500;
 }
 
 /* ==============================================================
@@ -1333,19 +1379,113 @@ a:hover { text-decoration: underline; }
     gap: var(--space-4);
   }
 
-  /* Fluid table font size */
-  .data-table, .task-table, .print-table {
-    font-size: clamp(0.65rem, 2vw, 0.875rem);
+  /* Mobile Card View for History & Recent */
+  .table-wrapper {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    overflow: visible;
   }
 
-  .data-table th, .data-table td,
+  .data-table {
+    display: none; /* Hide desktop table on small screens */
+  }
+
+  .mobile-cards-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .inspection-card {
+    background: var(--white);
+    border: 1px solid var(--slate-200);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .inspection-card:active {
+    transform: scale(0.99);
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--slate-100);
+    padding-bottom: var(--space-2);
+  }
+
+  .card-form-id {
+    font-weight: 800;
+    font-size: var(--font-base);
+    color: var(--slate-900);
+    letter-spacing: -0.01em;
+  }
+
+  .card-body-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .card-field {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-label {
+    font-size: 0.6875rem;
+    color: var(--slate-400);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .card-val {
+    font-size: var(--font-sm);
+    font-weight: 600;
+    color: var(--slate-700);
+  }
+
+  .card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+    border-top: 1px solid var(--slate-100);
+    padding-top: var(--space-2);
+  }
+
+  .card-actions .btn {
+    padding: 6px 14px;
+    font-size: var(--font-xs);
+  }
+
+  /* Task Table on Mobile */
+  .task-table-wrapper {
+    border-radius: var(--radius-md);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .task-table {
+    min-width: 460px; /* Ensure content is readable with horizontal scroll */
+  }
+
   .task-table th, .task-table td {
-    padding: var(--space-2) var(--space-2);
+    padding: 10px 8px;
   }
 
   .status-label {
-    padding: 3px 8px;
-    font-size: 0.625rem;
+    min-width: 48px;
+    height: 34px;
+    padding: 0 8px;
+    font-size: 0.6875rem;
   }
 
   .metric-card {
