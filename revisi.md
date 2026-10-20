@@ -23,3 +23,15 @@
 # Revisi v2.0.3: Penambahan Favicon (SELESAI DITERAPKAN)
 - Ikon Icons8 ditambahkan sebagai favicon pada tab browser.
 - Sumber ikon: https://img.icons8.com/?size=80&id=J5OHINhSdwbD&format=png`r
+
+---
+
+# Revisi v2.1.0: Hardening Keamanan Menyeluruh (SELESAI DITERAPKAN)
+- **1. Autentikasi PIN Server-Side:** PIN `2323` dan `3434` dihapus 100% dari kode JavaScript frontend (public/app.js). Verifikasi kini ditangani secara aman di endpoint server POST /api/auth/verify-pin yang mengembalikan cryptographic session token acak.
+- **2. Middleware Autentikasi API:** Seluruh endpoint API kini diproteksi dengan header X-Auth-Token. Request tanpa token valid langsung ditolak (401 Unauthorized).
+- **3. Role-Based Access Control (RBAC):** Endpoint DELETE /api/inspections/:id dan GET /api/dashboard dikunci secara server-side hanya untuk role dmin.
+- **4. Rate Limiting:** Pembatasan brute-force PIN maksimal 5 kali per menit, dan pembatasan traffic API umum maksimal 100 request per menit per IP (express-rate-limit).
+- **5. CORS Restriction:** Akses API dibatasi hanya untuk origin resmi (ormmaintenance.vercel.app dan localhost).
+- **6. Sanitasi Search Filter:** Input parameter pencarian pada integrasi Supabase dibersihkan dari karakter manipulasi filter.
+- **7. Proteksi Error Leakage:** Pesan error internal sistem tidak lagi diekspos ke client publik.
+- **8. Skema RLS Supabase:** Menambahkan definisi kebijakan Row Level Security pada supabase_schema.sql.

@@ -17,13 +17,25 @@
     machineTypes: [],
     currentDetailId: null,
     currentRole: null, // 'admin' | 'user' | null
-    enteredPin: ''
+    enteredPin: '',
+    authToken: sessionStorage.getItem('pm_auth_token') || null
   };
 
-  const PIN_MAP = {
-    '2323': 'user',
-    '3434': 'admin'
-  };
+  // Helper untuk melakukan request API dengan token autentikasi
+  async function authFetch(url, options = {}) {
+    options.headers = options.headers || {};
+    if (state.authToken) {
+      options.headers['X-Auth-Token'] = state.authToken;
+    }
+    const res = await fetch(url, options);
+    if (res.status === 401) {
+      // Sesi habis atau token tidak valid -> kunci layar
+      lockScreen();
+      showToast('Sesi telah berakhir. Silakan masukkan PIN kembali.', 'error');
+      throw new Error('Unauthorized');
+    }
+    return res;
+  }
 
   // ============================================================
   // DOM REFERENCES
@@ -74,7 +86,7 @@
     }
 
     try {
-      const res = await fetch('/api/dashboard');
+      const res = await authFetch('/api/dashboard');
       const data = await res.json();
       state.dashboardCache = data;
       renderDashboard(data);
@@ -277,7 +289,7 @@
     // Load machine types
     if (state.machineTypes.length === 0) {
       try {
-        const res = await fetch('/api/machine-types');
+        const res = await authFetch('/api/machine-types');
         state.machineTypes = await res.json();
       } catch(e) { console.error(e); }
     }
@@ -319,7 +331,7 @@
 
   async function loadNextFormId() {
     try {
-      const res = await fetch('/api/next-form-id');
+      const res = await authFetch('/api/next-form-id');
       const data = await res.json();
       $('#formId').value = data.formId;
     } catch(e) { console.error(e); }
@@ -336,7 +348,7 @@
     }
 
     try {
-      const res = await fetch('/api/templates/' + encodeURIComponent(type));
+      const res = await authFetch('/api/templates/' + encodeURIComponent(type));
       const tasks = await res.json();
       renderTaskList(tasks);
       $('#taskListCard').style.display = 'block';
@@ -476,7 +488,7 @@
     };
 
     try {
-      const res = await fetch('/api/inspections', {
+      const res = await authFetch('/api/inspections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -526,7 +538,7 @@
     if (machineType) params.append('machine_type', machineType);
 
     try {
-      const res = await fetch('/api/inspections?' + params.toString());
+      const res = await authFetch('/api/inspections?' + params.toString());
       const data = await res.json();
       data._key = cacheKey;
       state.historyCache = data;
@@ -647,7 +659,7 @@
     navigateToDetailPage();
 
     try {
-      const res = await fetch('/api/inspections/' + id);
+      const res = await authFetch('/api/inspections/' + id);
       const data = await res.json();
       renderDetail(data);
     } catch(e) {
@@ -706,10 +718,25 @@
     window.print();
   });
 
-  // Export Excel
-  $('#btnExportExcel').addEventListener('click', () => {
-    if (state.currentDetailId) {
-      window.location.href = '/api/inspections/' + state.currentDetailId + '/excel';
+  // Export Excel (authenticated blob download)
+  $('#btnExportExcel').addEventListener('click', async () => {
+    if (!state.currentDetailId) return;
+    try {
+      showToast('Menyiapkan file Excel...', 'info');
+      const res = await authFetch('/api/inspections/' + state.currentDetailId + '/excel');
+      if (!res.ok) throw new Error('Gagal mengunduh Excel');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `PM_${$('#printFormId').textContent || 'inspeksi'}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      showToast('Excel berhasil diunduh!', 'success');
+    } catch (e) {
+      showToast('Gagal mengunduh file Excel', 'error');
     }
   });
 
@@ -738,7 +765,7 @@
   $('#confirmOK').addEventListener('click', async () => {
     if (!pendingDeleteId) return;
     try {
-      const res = await fetch('/api/inspections/' + pendingDeleteId, { method: 'DELETE' });
+      const res = await authFetch('/api/inspections/' + pendingDeleteId, { method: 'DELETE' });
       const result = await res.json();
       if (result.success) {
         showToast('Inspeksi berhasil dihapus', 'success');
@@ -820,10 +847,15 @@
   function initPinAuth() {
     // Check existing session
     const savedRole = sessionStorage.getItem('pm_user_role');
-    if (savedRole && (savedRole === 'admin' || savedRole === 'user')) {
+    const savedToken = sessionStorage.getItem('pm_auth_token');
+    if (savedRole && savedToken && (savedRole === 'admin' || savedRole === 'user')) {
+      state.authToken = savedToken;
       applyRole(savedRole);
       hidePinOverlay();
     } else {
+      sessionStorage.removeItem('pm_user_role');
+      sessionStorage.removeItem('pm_auth_token');
+      state.authToken = null;
       showPinOverlay();
     }
 
@@ -890,21 +922,35 @@
     });
   }
 
-  function verifyPin() {
-    const role = PIN_MAP[state.enteredPin];
-    if (role) {
-      applyRole(role);
-      sessionStorage.setItem('pm_user_role', role);
-      hidePinOverlay();
-      showToast('Masuk sebagai ' + (role === 'admin' ? 'Admin' : 'User'), 'success');
-      
-      // If user role, make sure they don't land on dashboard
-      if (role === 'user') {
-        navigateTo('new-inspection', true);
+  async function verifyPin() {
+    const pin = state.enteredPin;
+    try {
+      const res = await fetch('/api/auth/verify-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin })
+      });
+      const data = await res.json();
+
+      if (data.success && data.token) {
+        state.authToken = data.token;
+        sessionStorage.setItem('pm_auth_token', data.token);
+        sessionStorage.setItem('pm_user_role', data.role);
+        applyRole(data.role);
+        hidePinOverlay();
+        showToast('Masuk sebagai ' + (data.role === 'admin' ? 'Admin' : 'User'), 'success');
+
+        if (data.role === 'user') {
+          navigateTo('new-inspection', true);
+        } else {
+          navigateTo('dashboard', true);
+        }
       } else {
-        navigateTo('dashboard', true);
+        showPinError();
+        state.enteredPin = '';
+        updatePinDots();
       }
-    } else {
+    } catch (err) {
       showPinError();
       state.enteredPin = '';
       updatePinDots();
@@ -949,8 +995,16 @@
   }
 
   function lockScreen() {
+    if (state.authToken) {
+      fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: { 'X-Auth-Token': state.authToken }
+      }).catch(() => {});
+    }
     sessionStorage.removeItem('pm_user_role');
+    sessionStorage.removeItem('pm_auth_token');
     state.currentRole = null;
+    state.authToken = null;
     showPinOverlay();
   }
 

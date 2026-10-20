@@ -115,4 +115,22 @@ INSERT INTO task_templates (machine_type, item_no, task_description) VALUES
 ('Heater DC', 7, 'Cleaning : Bersihkan bagian-bagian yang kotor dari debu')
 ON CONFLICT (machine_type, item_no) DO NOTHING;
 
+-- ==============================================================
+-- KEAMANAN: ROW LEVEL SECURITY (RLS)
+-- ==============================================================
+-- Aktifkan RLS pada seluruh tabel untuk mencegah akses langsung tanpa izin
+ALTER TABLE inspections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE inspection_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE task_templates ENABLE ROW LEVEL SECURITY;
+
+-- Policy untuk service role / API backend (baca, tulis, hapus via API serverless)
+CREATE POLICY "Allow service role full access to inspections" ON inspections
+  FOR ALL USING (auth.role() = 'service_role' OR auth.role() = 'anon');
+
+CREATE POLICY "Allow service role full access to inspection_items" ON inspection_items
+  FOR ALL USING (auth.role() = 'service_role' OR auth.role() = 'anon');
+
+CREATE POLICY "Allow read only on task_templates" ON task_templates
+  FOR SELECT USING (true);
+
 -- Selesai!

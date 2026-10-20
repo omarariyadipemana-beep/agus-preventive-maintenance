@@ -1,12 +1,81 @@
 const express = require('express');
 const path = require('path');
+const crypto = require('crypto');
 const ExcelJS = require('exceljs');
+const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = 3001;
 
-// Middleware
+// ============================================================
+// SECURITY: PIN & SESSION MANAGEMENT (SERVER-SIDE)
+// ============================================================
+const PIN_MAP = {
+  '2323': 'user',
+  '3434': 'admin'
+};
+
+// In-memory session store (survives as long as server runs)
+const sessions = new Map();
+
+function generateToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+function authMiddleware(req, res, next) {
+  const token = req.headers['x-auth-token'];
+  if (!token || !sessions.has(token)) {
+    return res.status(401).json({ error: 'Akses ditolak. Silakan login terlebih dahulu.' });
+  }
+  req.userRole = sessions.get(token).role;
+  next();
+}
+
+function adminOnly(req, res, next) {
+  if (req.userRole !== 'admin') {
+    return res.status(403).json({ error: 'Akses ditolak. Hanya Admin yang diizinkan.' });
+  }
+  next();
+}
+
+// ============================================================
+// SECURITY: RATE LIMITING
+// ============================================================
+const pinLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 menit
+  max: 5, // 5 percobaan per menit
+  message: { error: 'Terlalu banyak percobaan PIN. Coba lagi dalam 1 menit.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 menit
+  max: 100, // 100 request per menit
+  message: { error: 'Terlalu banyak request. Coba lagi nanti.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// ============================================================
+// MIDDLEWARE
+// ============================================================
 app.use(express.json());
+
+// CORS: hanya izinkan domain resmi
+app.use((req, res, next) => {
+  const allowedOrigins = ['https://formmaintenance.vercel.app', 'http://localhost:3001'];
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Auth-Token');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
+
+app.use('/api', apiLimiter);
 app.use(express.static(path.join(__dirname, 'public')));
 
 let Database = null;
@@ -178,42 +247,79 @@ if (db) {
 // API ROUTES
 // ============================================================
 
+// AUTH: Verify PIN (public endpoint)
+app.post('/api/auth/verify-pin', pinLimiter, (req, res) => {
+  const { pin } = req.body;
+  if (!pin || typeof pin !== 'string') {
+    return res.status(400).json({ success: false, error: 'PIN diperlukan.' });
+  }
+  const role = PIN_MAP[pin];
+  if (!role) {
+    return res.status(401).json({ success: false, error: 'PIN salah.' });
+  }
+  const token = generateToken();
+  sessions.set(token, { role, createdAt: Date.now() });
+  res.json({ success: true, token, role });
+});
+
+// AUTH: Logout
+app.post('/api/auth/logout', (req, res) => {
+  const token = req.headers['x-auth-token'];
+  if (token) sessions.delete(token);
+  res.json({ success: true });
+});
+
 // Get task templates by machine type
-app.get('/api/templates/:machineType', (req, res) => {
-  const tasks = db.prepare('SELECT item_no, task_description FROM task_templates WHERE machine_type = ? ORDER BY item_no').all(req.params.machineType);
-  res.json(tasks);
+app.get('/api/templates/:machineType', authMiddleware, (req, res) => {
+  try {
+    const tasks = db.prepare('SELECT item_no, task_description FROM task_templates WHERE machine_type = ? ORDER BY item_no').all(req.params.machineType);
+    res.json(tasks);
+  } catch (err) {
+    console.error('Error loading templates:', err.message);
+    res.status(500).json({ error: 'Terjadi kesalahan server.' });
+  }
 });
 
 // Get available machine types
-app.get('/api/machine-types', (req, res) => {
-  const types = db.prepare('SELECT DISTINCT machine_type FROM task_templates ORDER BY machine_type').all();
-  res.json(types.map(t => t.machine_type));
+app.get('/api/machine-types', authMiddleware, (req, res) => {
+  try {
+    const types = db.prepare('SELECT DISTINCT machine_type FROM task_templates ORDER BY machine_type').all();
+    res.json(types.map(t => t.machine_type));
+  } catch (err) {
+    console.error('Error loading machine types:', err.message);
+    res.status(500).json({ error: 'Terjadi kesalahan server.' });
+  }
 });
 
 // Generate next form ID
-app.get('/api/next-form-id', (req, res) => {
-  const now = new Date();
-  const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const prefix = `PM-${yearMonth}-`;
-  
-  const row = db.prepare(`
-    SELECT form_id FROM inspections 
-    WHERE form_id LIKE ? 
-    ORDER BY form_id DESC 
-    LIMIT 1
-  `).get(`${prefix}%`);
+app.get('/api/next-form-id', authMiddleware, (req, res) => {
+  try {
+    const now = new Date();
+    const yearMonth = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const prefix = `PM-${yearMonth}-`;
+    
+    const row = db.prepare(`
+      SELECT form_id FROM inspections 
+      WHERE form_id LIKE ? 
+      ORDER BY form_id DESC 
+      LIMIT 1
+    `).get(`${prefix}%`);
 
-  let nextNum = 1;
-  if (row) {
-    const lastNum = parseInt(row.form_id.split('-')[2], 10);
-    nextNum = lastNum + 1;
+    let nextNum = 1;
+    if (row) {
+      const lastNum = parseInt(row.form_id.split('-')[2], 10);
+      nextNum = lastNum + 1;
+    }
+
+    res.json({ formId: `${prefix}${String(nextNum).padStart(3, '0')}` });
+  } catch (err) {
+    console.error('Error generating form ID:', err.message);
+    res.status(500).json({ error: 'Terjadi kesalahan server.' });
   }
-
-  res.json({ formId: `${prefix}${String(nextNum).padStart(3, '0')}` });
 });
 
 // Save inspection
-app.post('/api/inspections', (req, res) => {
+app.post('/api/inspections', authMiddleware, (req, res) => {
   const { form_id, machine_type, equipment_id, location, mtc_support, inspection_date, verification_result, maintenance_support_name, group_leader_name, logistic_leader_name, items } = req.body;
 
   try {
@@ -241,51 +347,69 @@ app.post('/api/inspections', (req, res) => {
     const id = saveAll();
     res.json({ success: true, id });
   } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+    console.error('Error saving inspection:', err.message);
+    res.status(400).json({ success: false, error: 'Gagal menyimpan inspeksi.' });
   }
 });
 
 // Get all inspections (list)
-app.get('/api/inspections', (req, res) => {
-  const { search, machine_type, page = 1, limit = 20 } = req.query;
-  const offset = (parseInt(page) - 1) * parseInt(limit);
+app.get('/api/inspections', authMiddleware, (req, res) => {
+  try {
+    const { search, machine_type } = req.query;
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const offset = (page - 1) * limit;
 
-  let where = '1=1';
-  const params = [];
+    let where = '1=1';
+    const params = [];
 
-  if (search) {
-    where += ' AND (form_id LIKE ? OR equipment_id LIKE ? OR location LIKE ? OR mtc_support LIKE ?)';
-    const s = `%${search}%`;
-    params.push(s, s, s, s);
+    if (search) {
+      where += ' AND (form_id LIKE ? OR equipment_id LIKE ? OR location LIKE ? OR mtc_support LIKE ?)';
+      const s = `%${search}%`;
+      params.push(s, s, s, s);
+    }
+    if (machine_type) {
+      where += ' AND machine_type = ?';
+      params.push(machine_type);
+    }
+
+    const total = db.prepare(`SELECT COUNT(*) as cnt FROM inspections WHERE ${where}`).get(...params).cnt;
+    const rows = db.prepare(`SELECT * FROM inspections WHERE ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(...params, limit, offset);
+
+    res.json({ data: rows, total, page, limit });
+  } catch (err) {
+    console.error('Error loading inspections:', err.message);
+    res.status(500).json({ error: 'Terjadi kesalahan server.' });
   }
-  if (machine_type) {
-    where += ' AND machine_type = ?';
-    params.push(machine_type);
-  }
-
-  const total = db.prepare(`SELECT COUNT(*) as cnt FROM inspections WHERE ${where}`).get(...params).cnt;
-  const rows = db.prepare(`SELECT * FROM inspections WHERE ${where} ORDER BY created_at DESC LIMIT ? OFFSET ?`).all(...params, parseInt(limit), offset);
-
-  res.json({ data: rows, total, page: parseInt(page), limit: parseInt(limit) });
 });
 
 // Get single inspection with items
-app.get('/api/inspections/:id', (req, res) => {
-  const inspection = db.prepare('SELECT * FROM inspections WHERE id = ?').get(req.params.id);
-  if (!inspection) return res.status(404).json({ error: 'Not found' });
+app.get('/api/inspections/:id', authMiddleware, (req, res) => {
+  try {
+    const inspection = db.prepare('SELECT * FROM inspections WHERE id = ?').get(req.params.id);
+    if (!inspection) return res.status(404).json({ error: 'Data tidak ditemukan.' });
 
-  const items = db.prepare('SELECT * FROM inspection_items WHERE inspection_id = ? ORDER BY item_no').all(req.params.id);
-  res.json({ ...inspection, items });
+    const items = db.prepare('SELECT * FROM inspection_items WHERE inspection_id = ? ORDER BY item_no').all(req.params.id);
+    res.json({ ...inspection, items });
+  } catch (err) {
+    console.error('Error loading inspection detail:', err.message);
+    res.status(500).json({ error: 'Terjadi kesalahan server.' });
+  }
 });
 
-// Delete inspection
-app.delete('/api/inspections/:id', (req, res) => {
-  const info = db.prepare('DELETE FROM inspections WHERE id = ?').run(req.params.id);
-  res.json({ success: info.changes > 0 });
+// Delete inspection (Admin only)
+app.delete('/api/inspections/:id', authMiddleware, adminOnly, (req, res) => {
+  try {
+    const info = db.prepare('DELETE FROM inspections WHERE id = ?').run(req.params.id);
+    res.json({ success: info.changes > 0 });
+  } catch (err) {
+    console.error('Error deleting inspection:', err.message);
+    res.status(500).json({ error: 'Terjadi kesalahan server.' });
+  }
 });
 
 // Dashboard stats
-app.get('/api/dashboard', (req, res) => {
+app.get('/api/dashboard', authMiddleware, adminOnly, (req, res) => {
   const now = new Date();
   const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
@@ -341,7 +465,7 @@ app.get('/api/dashboard', (req, res) => {
 });
 
 // Export to Excel
-app.get('/api/inspections/:id/excel', async (req, res) => {
+app.get('/api/inspections/:id/excel', authMiddleware, async (req, res) => {
   const inspection = db.prepare('SELECT * FROM inspections WHERE id = ?').get(req.params.id);
   if (!inspection) return res.status(404).json({ error: 'Not found' });
 

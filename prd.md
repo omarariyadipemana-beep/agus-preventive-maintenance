@@ -231,3 +231,15 @@
 
 
 
+
+- v2.0.1: Penggantian istilah label antarmuka dari 'Tipe Mesin' menjadi 'Tipe Peralatan'.
+- v2.0.2: Penggantian ikon brand dengan ikon Icons8 resmi.
+- v2.0.3: Penambahan Favicon tab browser menggunakan aset Icons8.
+- v2.1.0: Hardening Keamanan Komprehensif:
+  * Eliminasi PIN dari kode browser (PIN disimpan & divalidasi server-side).
+  * Proteksi token sesi kriptografis pada setiap endpoint API (X-Auth-Token).
+  * Enforcing RBAC server-side (Dashboard & Delete hanya Admin).
+  * Rate limiting anti brute-force dan anti spam traffic (express-rate-limit).
+  * Proteksi CORS untuk domain resmi ormmaintenance.vercel.app.
+  * Sanitasi input search dan eliminasi kebocoran pesan error internal.
+  * Dukungan RLS pada skema database Supabase.

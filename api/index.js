@@ -1,11 +1,87 @@
 const express = require('express');
+const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 const ExcelJS = require('exceljs');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const path = require('path');
 const app = express();
+
+// ============================================================
+// SECURITY: PIN & SESSION MANAGEMENT (SERVER-SIDE)
+// ============================================================
+const PIN_MAP = {
+  '2323': 'user',
+  '3434': 'admin'
+};
+
+const sessions = new Map();
+
+function generateToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+function authMiddleware(req, res, next) {
+  const token = req.headers['x-auth-token'];
+  if (!token || !sessions.has(token)) {
+    return res.status(401).json({ error: 'Akses ditolak. Silakan login terlebih dahulu.' });
+  }
+  req.userRole = sessions.get(token).role;
+  next();
+}
+
+function adminOnly(req, res, next) {
+  if (req.userRole !== 'admin') {
+    return res.status(403).json({ error: 'Akses ditolak. Hanya Admin yang diizinkan.' });
+  }
+  next();
+}
+
+// Sanitasi input search untuk Supabase filter
+function sanitizeSearch(str) {
+  if (!str) return '';
+  return str.replace(/[.,()%\\]/g, '').trim().substring(0, 100);
+}
+
+// ============================================================
+// SECURITY: RATE LIMITING
+// ============================================================
+const pinLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: { error: 'Terlalu banyak percobaan PIN. Coba lagi dalam 1 menit.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  message: { error: 'Terlalu banyak request. Coba lagi nanti.' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// ============================================================
+// MIDDLEWARE
+// ============================================================
 app.use(express.json());
+
+// CORS: hanya izinkan domain resmi
+app.use((req, res, next) => {
+  const allowedOrigins = ['https://formmaintenance.vercel.app', 'http://localhost:3001'];
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Auth-Token');
+  if (req.method === 'OPTIONS') return res.sendStatus(200);
+  next();
+});
+
+app.use('/api', apiLimiter);
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Inisialisasi Supabase Client
@@ -31,8 +107,30 @@ function checkSupabase(res) {
 // API ROUTES (Serverless on Vercel)
 // ============================================================
 
+// AUTH: Verify PIN (public endpoint)
+app.post('/api/auth/verify-pin', pinLimiter, (req, res) => {
+  const { pin } = req.body;
+  if (!pin || typeof pin !== 'string') {
+    return res.status(400).json({ success: false, error: 'PIN diperlukan.' });
+  }
+  const role = PIN_MAP[pin];
+  if (!role) {
+    return res.status(401).json({ success: false, error: 'PIN salah.' });
+  }
+  const token = generateToken();
+  sessions.set(token, { role, createdAt: Date.now() });
+  res.json({ success: true, token, role });
+});
+
+// AUTH: Logout
+app.post('/api/auth/logout', (req, res) => {
+  const token = req.headers['x-auth-token'];
+  if (token) sessions.delete(token);
+  res.json({ success: true });
+});
+
 // Get task templates by machine type
-app.get('/api/templates/:machineType', async (req, res) => {
+app.get('/api/templates/:machineType', authMiddleware, async (req, res) => {
   if (!checkSupabase(res)) return;
   try {
     const { data, error } = await supabase
@@ -44,12 +142,13 @@ app.get('/api/templates/:machineType', async (req, res) => {
     if (error) throw error;
     res.json(data || []);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error loading templates:', err.message);
+    res.status(500).json({ error: 'Terjadi kesalahan server.' });
   }
 });
 
 // Get available machine types
-app.get('/api/machine-types', async (req, res) => {
+app.get('/api/machine-types', authMiddleware, async (req, res) => {
   if (!checkSupabase(res)) return;
   try {
     const { data, error } = await supabase
@@ -60,12 +159,13 @@ app.get('/api/machine-types', async (req, res) => {
     const types = [...new Set((data || []).map(t => t.machine_type))].sort();
     res.json(types);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error loading machine types:', err.message);
+    res.status(500).json({ error: 'Terjadi kesalahan server.' });
   }
 });
 
 // Generate next form ID
-app.get('/api/next-form-id', async (req, res) => {
+app.get('/api/next-form-id', authMiddleware, async (req, res) => {
   if (!checkSupabase(res)) return;
   try {
     const now = new Date();
@@ -91,12 +191,13 @@ app.get('/api/next-form-id', async (req, res) => {
 
     res.json({ formId: `${prefix}${String(nextNum).padStart(3, '0')}` });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error generating form ID:', err.message);
+    res.status(500).json({ error: 'Terjadi kesalahan server.' });
   }
 });
 
 // Save inspection
-app.post('/api/inspections', async (req, res) => {
+app.post('/api/inspections', authMiddleware, async (req, res) => {
   if (!checkSupabase(res)) return;
   const {
     form_id, machine_type, equipment_id, location, mtc_support,
@@ -105,7 +206,6 @@ app.post('/api/inspections', async (req, res) => {
   } = req.body;
 
   try {
-    // 1. Insert header
     const { data: inspection, error: insError } = await supabase
       .from('inspections')
       .insert([{
@@ -118,7 +218,6 @@ app.post('/api/inspections', async (req, res) => {
 
     if (insError) throw insError;
 
-    // 2. Insert items
     if (items && items.length > 0) {
       const itemRows = items.map(it => ({
         inspection_id: inspection.id,
@@ -137,16 +236,19 @@ app.post('/api/inspections', async (req, res) => {
 
     res.json({ success: true, id: inspection.id });
   } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+    console.error('Error saving inspection:', err.message);
+    res.status(400).json({ success: false, error: 'Gagal menyimpan inspeksi.' });
   }
 });
 
 // Get all inspections (list with search, filter, pagination)
-app.get('/api/inspections', async (req, res) => {
+app.get('/api/inspections', authMiddleware, async (req, res) => {
   if (!checkSupabase(res)) return;
-  const { search, machine_type, page = 1, limit = 20 } = req.query;
-  const p = parseInt(page);
-  const l = parseInt(limit);
+  const rawSearch = req.query.search;
+  const search = sanitizeSearch(rawSearch);
+  const machine_type = req.query.machine_type;
+  const p = Math.max(1, parseInt(req.query.page) || 1);
+  const l = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
   const from = (p - 1) * l;
   const to = from + l - 1;
 
@@ -171,12 +273,13 @@ app.get('/api/inspections', async (req, res) => {
 
     res.json({ data: data || [], total: count || 0, page: p, limit: l });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error loading inspections:', err.message);
+    res.status(500).json({ error: 'Terjadi kesalahan server.' });
   }
 });
 
 // Get single inspection with items
-app.get('/api/inspections/:id', async (req, res) => {
+app.get('/api/inspections/:id', authMiddleware, async (req, res) => {
   if (!checkSupabase(res)) return;
   try {
     const { data: inspection, error: insError } = await supabase
@@ -186,7 +289,7 @@ app.get('/api/inspections/:id', async (req, res) => {
       .single();
 
     if (insError) throw insError;
-    if (!inspection) return res.status(404).json({ error: 'Not found' });
+    if (!inspection) return res.status(404).json({ error: 'Data tidak ditemukan.' });
 
     const { data: items, error: itemsError } = await supabase
       .from('inspection_items')
@@ -198,12 +301,13 @@ app.get('/api/inspections/:id', async (req, res) => {
 
     res.json({ ...inspection, items: items || [] });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error loading inspection detail:', err.message);
+    res.status(500).json({ error: 'Terjadi kesalahan server.' });
   }
 });
 
-// Delete inspection
-app.delete('/api/inspections/:id', async (req, res) => {
+// Delete inspection (Admin only)
+app.delete('/api/inspections/:id', authMiddleware, adminOnly, async (req, res) => {
   if (!checkSupabase(res)) return;
   try {
     const { error } = await supabase
@@ -214,12 +318,13 @@ app.delete('/api/inspections/:id', async (req, res) => {
     if (error) throw error;
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error deleting inspection:', err.message);
+    res.status(500).json({ error: 'Terjadi kesalahan server.' });
   }
 });
 
 // Dashboard stats
-app.get('/api/dashboard', async (req, res) => {
+app.get('/api/dashboard', authMiddleware, adminOnly, async (req, res) => {
   if (!checkSupabase(res)) return;
   try {
     const now = new Date();
@@ -332,7 +437,7 @@ app.get('/api/dashboard', async (req, res) => {
 });
 
 // Export to Excel
-app.get('/api/inspections/:id/excel', async (req, res) => {
+app.get('/api/inspections/:id/excel', authMiddleware, async (req, res) => {
   if (!checkSupabase(res)) return;
   try {
     const { data: inspection } = await supabase
@@ -430,7 +535,8 @@ app.get('/api/inspections/:id/excel', async (req, res) => {
     await workbook.xlsx.write(res);
     res.end();
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Error exporting Excel:', err.message);
+    res.status(500).json({ error: 'Terjadi kesalahan server.' });
   }
 });
 
