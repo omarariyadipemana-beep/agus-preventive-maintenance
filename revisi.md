@@ -1,9 +1,6 @@
-# Riwayat Revisi Terakhir: v1.8.0 (SELESAI DITERAPKAN)
-- Transformasi Halaman Detail Inspeksi di HP (Konsep A: Mobile Card / Row View):
-  1. **Eliminasi Teks Terpotong Vertikal:** Di layar ponsel (<= 768px), tabel kaku 4 kolom `.print-table` ditransformasikan menjadi tampilan baris kartu (Card/Row view) yang lega.
-  2. **Struktur Baris Kartu Mobile:**
-     - Nomor item (`Item #1`) sejajar dengan Status Badge (`OK` hijau atau `NOT OKE` merah) di pojok kanan atas.
-     - Deskripsi task list melebar 100% horizontal (`line-height: 1.55`, `font-size: 0.8125rem`) tanpa terpecah per huruf.
-     - Kotak catatan / Remarks tampil rapi di bagian bawah item.
-  3. **Garansi Proteksi Cetak A4:** Seluruh aturan kartu mobile di-reset secara total di `@media print` (`display: table`, `table-row`, `table-cell`), sehingga fungsi Cetak PDF 1 halaman A4 tetap 100% identik dengan formulir fisik.
+# Riwayat Revisi Terakhir: v1.9.0 (SELESAI DITERAPKAN)
+- Perbaikan Bagian Bawah Form Inspeksi di HP (Tanda Tangan & Tombol Aksi):
+  1. **Tanda Tangan Tidak Terpotong Lagi:** Di layar HP (<= 768px), `.signatures-grid` diubah menjadi 1 kolom vertikal bertumpuk (`grid-template-columns: 1fr`). Seluruh 3 penanda tangan (Maintenance Support, Group Leader / LPU, dan Logistik Leader) tampil utuh, lebar input 100%, dan bebas overflow ke kanan.
+  2. **Tombol Aksi Proporsional & Mudah Disentuh:** Di HP, `.form-actions` diubah menjadi grid 2 kolom (`grid-template-columns: 1fr 2fr`) dengan tinggi 48px dan padding bawah yang lega sehingga tidak tertutup atau menabrak bottom navigation bar.
+  3. **Integritas Desktop & Cetak A4:** Di desktop dan cetak PDF A4, blok tanda tangan tetap otomatis 3 kolom sejajar presisi.
 - Seluruh spesifikasi telah disinkronkan ke zona bawah `prd.md`.

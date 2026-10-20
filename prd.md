@@ -215,6 +215,10 @@
   * Nomor item dan Status Badge berdampingan di baris atas, deskripsi task melebar 100% (anti-pecah kata per huruf).
   * Catatan / Remarks tampil sebagai kotak catatan minimalis di bawah task.
   * Output Cetak A4 tetap 100% terjaga sebagai tabel lembar kerja resmi via reset komprehensif di `@media print`.
+- v1.9.0: Perbaikan Bagian Bawah Form Inspeksi di HP (Tanda Tangan & Tombol Aksi):
+  * Di HP (<= 768px), blok tanda tangan diubah menjadi 1 kolom vertikal bertumpuk sehingga seluruh 3 penanda tangan (termasuk Logistik Leader) tampil utuh tanpa terpotong ke kanan.
+  * Tombol aksi Reset & Simpan Inspeksi diubah menjadi grid 2 kolom proporsional (1fr 2fr) dengan touch-target 48px dan ruang nafas yang cukup dari navbar bawah.
+
 
 
 
