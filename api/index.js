@@ -402,8 +402,8 @@ app.get('/api/inspections/:id/excel', async (req, res) => {
   }
 });
 
-// Serve frontend SPA fallback for non-API routes
-app.get('*', (req, res) => {
+// Serve frontend SPA fallback for non-API routes (Express v5 syntax)
+app.get('/(.*)', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
