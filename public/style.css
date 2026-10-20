@@ -444,6 +444,13 @@ a:hover { text-decoration: underline; }
   background: linear-gradient(135deg, var(--rose-500), var(--rose-600));
   height: 100%;
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+}
+
+.status-bar-nok:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.5);
 }
 
 .status-bar-legend {
@@ -452,6 +459,16 @@ a:hover { text-decoration: underline; }
   margin-top: var(--space-3);
   font-size: var(--font-sm);
   color: var(--slate-600);
+}
+
+.legend-nok {
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.legend-nok:hover {
+  color: var(--rose-600);
+  text-decoration: underline;
 }
 
 .legend-dot {
@@ -463,6 +480,299 @@ a:hover { text-decoration: underline; }
 }
 .dot-ok { background: var(--emerald-500); }
 .dot-nok { background: var(--rose-500); }
+
+/* ==============================================================
+   INTERACTIVE NOT OKE FINDINGS WIDGET & ALL-OK BANNER
+   ============================================================== */
+.nok-alert-section {
+  margin-bottom: var(--space-8);
+  animation: fadeIn 0.3s ease;
+}
+
+/* 100% All-OK Banner */
+.all-ok-banner {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border: 1.5px solid #a7f3d0;
+  border-radius: var(--radius-lg);
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  box-shadow: var(--shadow-xs);
+}
+
+.all-ok-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--emerald-500);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3);
+}
+
+.all-ok-icon svg { width: 22px; height: 22px; }
+
+.all-ok-text h3 {
+  font-size: var(--font-base);
+  font-weight: 700;
+  color: #065f46;
+  margin-bottom: 2px;
+}
+
+.all-ok-text p {
+  font-size: var(--font-sm);
+  color: #047857;
+  margin: 0;
+}
+
+/* NOT OKE Alert Card */
+.nok-alert-card {
+  background: var(--white);
+  border: 1.5px solid #fecdd3;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: 0 4px 16px -2px rgba(244, 63, 94, 0.08);
+  transition: all 0.3s ease;
+}
+
+.nok-alert-card.flash-highlight {
+  border-color: var(--rose-500);
+  box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.25), 0 10px 25px -5px rgba(244, 63, 94, 0.2);
+  transform: translateY(-2px);
+}
+
+.nok-alert-header {
+  background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+  border-bottom: 1px solid #fecdd3;
+  padding: var(--space-4) var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.nok-alert-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.nok-pulse-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--rose-600);
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.nok-pulse-badge svg {
+  width: 20px;
+  height: 20px;
+}
+
+.pulse-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid var(--rose-500);
+  animation: pulseRing 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
+@keyframes pulseRing {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 0; }
+  100% { transform: scale(1.3); opacity: 0; }
+}
+
+.nok-alert-title-wrap h3 {
+  font-size: var(--font-base);
+  font-weight: 800;
+  color: #9f1239;
+  letter-spacing: -0.01em;
+  margin-bottom: 2px;
+}
+
+.nok-alert-title-wrap p {
+  font-size: var(--font-xs);
+  color: #be123c;
+  margin: 0;
+}
+
+.nok-count-badge {
+  background: var(--rose-600);
+  color: var(--white);
+  font-size: var(--font-xs);
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.3);
+}
+
+.nok-items-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-6);
+  background: #fffafa;
+}
+
+.nok-item-box {
+  background: var(--white);
+  border: 1.5px solid #fecdd3;
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  box-shadow: var(--shadow-xs);
+  transition: all var(--transition-base);
+}
+
+.nok-item-box:hover {
+  border-color: #fda4af;
+  box-shadow: 0 4px 12px -2px rgba(244, 63, 94, 0.12);
+  transform: translateY(-1px);
+}
+
+.nok-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--slate-100);
+  padding-bottom: var(--space-2);
+}
+
+.nok-meta-group {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.nok-machine-badge {
+  font-size: 0.6875rem;
+  font-weight: 800;
+  background: var(--slate-800);
+  color: var(--white);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.nok-equip-id {
+  font-size: var(--font-sm);
+  color: var(--slate-700);
+}
+
+.nok-date {
+  font-size: 0.6875rem;
+  color: var(--slate-400);
+  font-weight: 600;
+}
+
+.nok-task-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.nok-task-num {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--rose-600);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.nok-task-name {
+  font-size: var(--font-sm);
+  color: var(--slate-800);
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.nok-remarks-box {
+  background: #fff1f2;
+  border: 1px solid #ffe4e6;
+  border-left: 3px solid var(--rose-500);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.nok-remarks-box svg {
+  width: 16px;
+  height: 16px;
+  color: var(--rose-600);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.nok-remarks-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.nok-remarks-label {
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: var(--rose-700);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.nok-remarks-text {
+  font-size: var(--font-sm);
+  color: #881337;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.nok-item-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: auto;
+  border-top: 1px solid var(--slate-100);
+  padding-top: var(--space-2);
+}
+
+.nok-form-ref {
+  font-size: var(--font-xs);
+  font-weight: 700;
+  color: var(--slate-400);
+}
+
+.nok-action-btn {
+  font-size: var(--font-xs) !important;
+  padding: 5px 12px !important;
+  color: var(--slate-700) !important;
+  border-color: var(--slate-300) !important;
+}
+
+.nok-action-btn:hover {
+  background: var(--rose-50) !important;
+  border-color: var(--rose-400) !important;
+  color: var(--rose-700) !important;
+}
 
 /* ==============================================================
    DATA TABLES
@@ -1363,6 +1673,38 @@ a:hover { text-decoration: underline; }
   .metric-icon svg { width: 17px; height: 17px; }
   .metric-value { font-size: var(--font-xl); }
   .metric-label { font-size: var(--font-xs); }
+
+  /* NOT OKE Widget on mobile */
+  .nok-alert-header {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .nok-alert-title-wrap h3 {
+    font-size: var(--font-sm);
+  }
+
+  .nok-items-grid {
+    grid-template-columns: 1fr;
+    padding: var(--space-3) var(--space-4);
+    gap: var(--space-3);
+  }
+
+  .nok-item-box {
+    padding: var(--space-3);
+  }
+
+  .all-ok-banner {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .all-ok-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .all-ok-text h3 {
+    font-size: var(--font-sm);
+  }
 
   .form-grid {
     grid-template-columns: 1fr;

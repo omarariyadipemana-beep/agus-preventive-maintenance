@@ -204,6 +204,12 @@
   * `.mobile-cards-list` di-hidden eksplisit di desktop untuk mencegah duplikat.
   * Print Info Grid responsif: 2 kolom rata di HP, 1 kolom di ≤400px.
   * Proteksi cetak: Reset `@media print` agar stacked-card CSS mobile tidak bocor ke output cetak.
+- v1.7.0: Dashboard Interaktif — Temuan NOT OKE & Drill-down Peringatan:
+  * Widget peringatan NOT OKE interaktif dengan pulse badge, rincian mesin, ID alat, nomor item, dan kotak alasan/keterangan kontras.
+  * Tombol pintas "Buka Form Inspeksi" langsung membawa ke detail form terkait.
+  * State 100% OK: Banner perayaan hijau jika seluruh item checklist dalam kondisi OK.
+  * Interaktivitas Progress Bar: Bagian merah & legend NOT OKE dapat diklik untuk auto-scroll dan memberi animasi kilau ke temuan.
+  * Sinkronisasi data real-time baik pada backend SQLite (`server.js`) maupun Vercel + Supabase (`api/index.js`).
 
 
 

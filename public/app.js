@@ -103,6 +103,9 @@
     $('#legendOKCount').textContent = data.itemOK;
     $('#legendNOKCount').textContent = data.itemNOK;
 
+    // Render NOT OKE Interactive Findings Widget
+    renderNokAlertWidget(data.nokItems || [], data.itemOK, data.itemNOK);
+
     // Recent table
     const tbody = $('#recentTableBody');
     const empty = $('#recentEmpty');
@@ -166,6 +169,105 @@
         </div>
       `).join('');
     }
+  }
+
+  // ============================================================
+  // INTERACTIVE NOT OKE FINDINGS WIDGET
+  // ============================================================
+  function renderNokAlertWidget(nokItems, okCount, nokCount) {
+    const container = $('#nokAlertSection');
+    if (!container) return;
+
+    if (nokCount === 0) {
+      if (okCount > 0) {
+        // All OK celebration banner
+        container.style.display = 'block';
+        container.innerHTML = `
+          <div class="all-ok-banner">
+            <div class="all-ok-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="all-ok-text">
+              <h3>Seluruh Item Checklist OK (100% Siap Operasi)</h3>
+              <p>Tidak ada temuan NOT OKE pada ${okCount} item inspeksi bulan ini. Mesin berjalan optimal.</p>
+            </div>
+          </div>
+        `;
+      } else {
+        container.style.display = 'none';
+      }
+      return;
+    }
+
+    // Has NOT OKE items
+    container.style.display = 'block';
+    container.innerHTML = `
+      <div class="nok-alert-card" id="nokFindingsCard">
+        <div class="nok-alert-header">
+          <div class="nok-alert-title-wrap">
+            <div class="nok-pulse-badge">
+              <span class="pulse-ring"></span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </div>
+            <div>
+              <h3>Perhatian: ${nokItems.length} Temuan NOT OKE Bulan Ini</h3>
+              <p>Segera lakukan tindak lanjut perbaikan atau penggantian suku cadang berikut:</p>
+            </div>
+          </div>
+          <span class="nok-count-badge">${nokItems.length} Masalah</span>
+        </div>
+
+        <div class="nok-items-grid">
+          ${nokItems.map(item => `
+            <div class="nok-item-box">
+              <div class="nok-item-top">
+                <div class="nok-meta-group">
+                  <span class="nok-machine-badge">${esc(item.machine_type)}</span>
+                  <span class="nok-equip-id"><strong>${esc(item.equipment_id)}</strong>${item.location ? ' • ' + esc(item.location) : ''}</span>
+                </div>
+                <span class="nok-date">${formatDate(item.inspection_date)}</span>
+              </div>
+
+              <div class="nok-task-info">
+                <span class="nok-task-num">Item #${item.item_no}</span>
+                <p class="nok-task-name">${esc(item.task_description)}</p>
+              </div>
+
+              <div class="nok-remarks-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <div class="nok-remarks-content">
+                  <span class="nok-remarks-label">Keterangan / Alasan NOT OKE:</span>
+                  <span class="nok-remarks-text">${esc(item.remarks || 'Tidak ada catatan tambahan')}</span>
+                </div>
+              </div>
+
+              <div class="nok-item-footer">
+                <span class="nok-form-ref">Ref: ${esc(item.form_id)}</span>
+                <button class="btn btn-outline nok-action-btn" onclick="viewDetail(${item.inspection_id})">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <span>Buka Form Inspeksi</span>
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+
+    // Wire up interactive progress bar click drill-down
+    const nokBar = $('#statusBarNOK');
+    const nokLegend = $('#legendNOKCount');
+    const highlightTarget = () => {
+      const card = $('#nokFindingsCard');
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        card.classList.add('flash-highlight');
+        setTimeout(() => card.classList.remove('flash-highlight'), 1200);
+      }
+    };
+
+    if (nokBar) nokBar.onclick = highlightTarget;
+    if (nokLegend) nokLegend.parentElement.onclick = highlightTarget;
   }
 
   // ============================================================

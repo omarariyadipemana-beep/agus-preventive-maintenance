@@ -1,6 +1,5 @@
 const express = require('express');
 const path = require('path');
-const Database = require('better-sqlite3');
 const ExcelJS = require('exceljs');
 
 const app = express();
@@ -307,6 +306,25 @@ app.get('/api/dashboard', (req, res) => {
     WHERE i.inspection_date LIKE ?
   `).get(`${yearMonth}%`);
 
+  // NOT OKE items with full context
+  const nokItems = db.prepare(`
+    SELECT 
+      ii.id as item_id,
+      ii.inspection_id,
+      i.form_id,
+      i.machine_type,
+      i.equipment_id,
+      i.location,
+      i.inspection_date,
+      ii.item_no,
+      ii.task_description,
+      ii.remarks
+    FROM inspection_items ii
+    JOIN inspections i ON ii.inspection_id = i.id
+    WHERE i.inspection_date LIKE ? AND ii.status = 'NOT OKE'
+    ORDER BY i.inspection_date DESC, ii.item_no ASC
+  `).all(`${yearMonth}%`);
+
   const recentInspections = db.prepare(`SELECT * FROM inspections ORDER BY created_at DESC LIMIT 5`).all();
 
   res.json({
@@ -316,6 +334,7 @@ app.get('/api/dashboard', (req, res) => {
     itemOK: itemStats.ok_count || 0,
     itemNOK: itemStats.nok_count || 0,
     totalItems: itemStats.total_items || 0,
+    nokItems: nokItems || [],
     recentInspections,
     currentMonth: yearMonth
   });

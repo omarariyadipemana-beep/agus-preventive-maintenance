@@ -267,19 +267,50 @@ app.get('/api/dashboard', async (req, res) => {
     let itemOK = 0;
     let itemNOK = 0;
     let totalItems = 0;
+    const nokItems = [];
 
     if (monthInspections && monthInspections.length > 0) {
       const ids = monthInspections.map(i => i.id);
       const { data: items } = await supabase
         .from('inspection_items')
-        .select('status')
+        .select(`
+          id,
+          inspection_id,
+          item_no,
+          task_description,
+          status,
+          remarks,
+          inspections (
+            form_id,
+            machine_type,
+            equipment_id,
+            location,
+            inspection_date
+          )
+        `)
         .in('inspection_id', ids);
 
       if (items) {
         totalItems = items.length;
         items.forEach(it => {
-          if (it.status === 'OK') itemOK++;
-          else if (it.status === 'NOT OKE') itemNOK++;
+          if (it.status === 'OK') {
+            itemOK++;
+          } else if (it.status === 'NOT OKE') {
+            itemNOK++;
+            const insp = it.inspections || {};
+            nokItems.push({
+              item_id: it.id,
+              inspection_id: it.inspection_id,
+              form_id: insp.form_id || '',
+              machine_type: insp.machine_type || '',
+              equipment_id: insp.equipment_id || '',
+              location: insp.location || '',
+              inspection_date: insp.inspection_date || '',
+              item_no: it.item_no,
+              task_description: it.task_description,
+              remarks: it.remarks || ''
+            });
+          }
         });
       }
     }
@@ -291,6 +322,7 @@ app.get('/api/dashboard', async (req, res) => {
       itemOK,
       itemNOK,
       totalItems,
+      nokItems,
       recentInspections: recentInspections || [],
       currentMonth: yearMonth
     });
