@@ -1,6 +1,11 @@
-# Riwayat Revisi Terakhir: v1.9.0 (SELESAI DITERAPKAN)
-- Perbaikan Bagian Bawah Form Inspeksi di HP (Tanda Tangan & Tombol Aksi):
-  1. **Tanda Tangan Tidak Terpotong Lagi:** Di layar HP (<= 768px), `.signatures-grid` diubah menjadi 1 kolom vertikal bertumpuk (`grid-template-columns: 1fr`). Seluruh 3 penanda tangan (Maintenance Support, Group Leader / LPU, dan Logistik Leader) tampil utuh, lebar input 100%, dan bebas overflow ke kanan.
-  2. **Tombol Aksi Proporsional & Mudah Disentuh:** Di HP, `.form-actions` diubah menjadi grid 2 kolom (`grid-template-columns: 1fr 2fr`) dengan tinggi 48px dan padding bawah yang lega sehingga tidak tertutup atau menabrak bottom navigation bar.
-  3. **Integritas Desktop & Cetak A4:** Di desktop dan cetak PDF A4, blok tanda tangan tetap otomatis 3 kolom sejajar presisi.
+# Riwayat Revisi Terakhir: v2.0.0 (SELESAI DITERAPKAN)
+- Transformasi Tema Visual: Fresh & Vibrant Violet-Cyan (Inspirasi Telco & Modern Mobile App):
+  1. **Palet Warna Baru:** Mengganti palet lama menjadi Electric Violet (`#7c3aed`), Vibrant Cyan (`#06b6d4`), Coral Red Salmon (`#f43f5e`), dan kanvas Soft Lavender Mist (`#f8f9ff`).
+  2. **Sidebar Desktop Modern:** Gradasi Deep Indigo Night (`#1e1b4b`) dengan aksen hover ungu dan glowing icon Cyan.
+  3. **Mobile Bottom Nav Bersih:** Latar belakang putih bersih (*Clean White*) dengan border tipis lavender, ikon aktif Electric Violet (`#7c3aed`), dan bayangan halus.
+  4. **Metric Cards E-Wallet Style:** Kartu metrik dengan border lavender halus, ikon gradasi lembut, dan bar indikator atas yang muncul saat hover.
+  5. **Progress Bar Cyan ke Violet:** Bar item OK menggunakan gradasi Cyan-Violet ala kuota meter aplikasi mobile, dan item NOT OKE menggunakan Coral Salmon.
+  6. **Buttons & Form Toggles:** Tombol primer bergradasi Electric Violet dengan bayangan mewah; toggle status OK menggunakan Cyan toska dan NOT OKE menggunakan Coral Red.
+  7. **PIN Overlay:** Tampilan keypad dan indikator PIN bernuansa Violet-Cyan modern.
+  8. **Proteksi Cetak A4:** Cetak PDF 1 halaman A4 tetap 100% monokrom/formal pabrik via isolasi `@media print`.
 - Seluruh spesifikasi telah disinkronkan ke zona bawah `prd.md`.

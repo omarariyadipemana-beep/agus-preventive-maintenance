@@ -218,6 +218,11 @@
 - v1.9.0: Perbaikan Bagian Bawah Form Inspeksi di HP (Tanda Tangan & Tombol Aksi):
   * Di HP (<= 768px), blok tanda tangan diubah menjadi 1 kolom vertikal bertumpuk sehingga seluruh 3 penanda tangan (termasuk Logistik Leader) tampil utuh tanpa terpotong ke kanan.
   * Tombol aksi Reset & Simpan Inspeksi diubah menjadi grid 2 kolom proporsional (1fr 2fr) dengan touch-target 48px dan ruang nafas yang cukup dari navbar bawah.
+- v2.0.0: Transformasi Tema Visual — Fresh & Vibrant Violet-Cyan (Inspirasi Telco & Modern Mobile App):
+  * Pengadopsian palet Electric Violet (`#7c3aed`), Vibrant Cyan (`#06b6d4`), Coral Red (`#f43f5e`), dan kanvas Soft Lavender (`#f8f9ff`).
+  * Desain sidebar desktop Deep Indigo, bottom navbar mobile putih bersih (*Clean White*), kartu metrik bergaya e-wallet, dan bar progres bergradasi Cyan-Violet.
+  * Tetap menjaga isolasi cetak A4 100% formal pabrik.
+
 
 
 
