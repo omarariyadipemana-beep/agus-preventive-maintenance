@@ -190,6 +190,12 @@
   * Tombol OK/NOT OKE diubah menjadi segmented toggle modern dengan ikon SVG (centang/silang) dan touch-target 44px ramah jempol.
   * Tampilan Riwayat di HP otomatis beralih menjadi Responsive Card View (bebas overflow/teks kepotong).
   * Validasi ketat: jika memilih NOT OKE, kolom keterangan wajib diisi alasan, input otomatis disorot merah dan fokus, serta submit diblokir jika kosong.
+- v1.5.0: Optimalisasi Cetak PDF Presisi 1 Halaman A4 (Single-Page A4 Guarantee):
+  * Deklarasi `@page { size: A4 portrait; margin: 6mm 10mm; }` untuk memanfaatkan seluruh area cetak A4.
+  * Blok 3 tanda tangan dikunci selalu horizontal sejajar (`repeat(3, 1fr)`) baik dicetak dari Laptop maupun ponsel HP.
+  * Isolasi media query responsif HP dengan `@media screen and (max-width: 768px)` agar aturan tampilan mobile tidak bocor ke mesin cetak.
+  * Kompaktifikasi padding, font-size, dan batas tanda tangan (26px) dengan `page-break-inside: avoid` sehingga seluruh form (7–19 item) pas tepat dalam 1 lembar halaman.
+
 
 
 

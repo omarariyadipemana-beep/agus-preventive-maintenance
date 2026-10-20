@@ -1326,7 +1326,7 @@ a:hover { text-decoration: underline; }
 /* ==============================================================
    RESPONSIVE
    ============================================================== */
-@media (max-width: 768px) {
+@media screen and (max-width: 768px) {
   .sidebar { display: none; }
 
   .mobile-nav { display: flex; }
@@ -1375,8 +1375,8 @@ a:hover { text-decoration: underline; }
   }
 
   .print-signatures {
-    grid-template-columns: 1fr;
-    gap: var(--space-4);
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
   }
 
   /* Mobile Card View for History & Recent */
@@ -1694,27 +1694,238 @@ body.role-user .btn-icon[title="Hapus"] {
 }
 
 /* ==============================================================
-   PRINT STYLES
+   PRINT STYLES (Single-Page A4 Full Guarantee)
    ============================================================== */
+@page {
+  size: A4 portrait;
+  margin: 6mm 10mm 6mm 10mm;
+}
+
 @media print {
-  body { background: white; }
+  *, *::before, *::after {
+    box-sizing: border-box !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html, body {
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+    font-size: 9pt !important;
+    color: #0f172a !important;
+  }
+
   .sidebar, .mobile-nav, .page-header, .header-actions,
-  .toast-container, .modal-overlay { display: none !important; }
+  .toast-container, .modal-overlay, #btnQuickAdd, .floating-btn {
+    display: none !important;
+  }
 
   .main-content {
-    margin: 0; padding: 0; max-width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
   }
 
-  .page { display: none !important; }
-  #page-detail { display: block !important; }
+  .page {
+    display: none !important;
+  }
+
+  #page-detail {
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
 
   .print-area {
-    border: none; box-shadow: none; border-radius: 0;
+    display: block !important;
+    border: 1.5px solid #0f172a !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
-  .print-table td, .print-table th {
-    border: 1px solid #ddd;
+  .print-header {
+    padding: 8px 12px 6px !important;
+    text-align: center !important;
+    border-bottom: 1.5px solid #0f172a !important;
+    position: relative !important;
+    background: #ffffff !important;
   }
 
-  .sig-line { margin-top: 60px; }
+  .print-title {
+    font-size: 13pt !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    margin: 0 !important;
+    line-height: 1.1 !important;
+    letter-spacing: -0.01em !important;
+    text-transform: uppercase !important;
+  }
+
+  .print-machine {
+    font-size: 11pt !important;
+    font-weight: 700 !important;
+    color: #1e293b !important;
+    margin: 3px 0 0 !important;
+    line-height: 1.1 !important;
+  }
+
+  .print-qms {
+    position: absolute !important;
+    top: 8px !important;
+    right: 12px !important;
+    font-size: 8pt !important;
+    font-weight: 700 !important;
+    color: #475569 !important;
+  }
+
+  .print-info-grid {
+    display: grid !important;
+    grid-template-columns: repeat(5, 1fr) !important;
+    gap: 4px 8px !important;
+    padding: 6px 12px !important;
+    border-bottom: 1.5px solid #0f172a !important;
+    background: #f8fafc !important;
+  }
+
+  .print-info-grid div {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1px !important;
+  }
+
+  .print-info-grid strong {
+    font-size: 7pt !important;
+    color: #475569 !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.04em !important;
+  }
+
+  .print-info-grid span {
+    font-size: 9pt !important;
+    font-weight: 600 !important;
+    color: #0f172a !important;
+    line-height: 1.15 !important;
+  }
+
+  .print-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 8pt !important;
+    line-height: 1.2 !important;
+  }
+
+  .print-table thead {
+    background: #f1f5f9 !important;
+  }
+
+  .print-table th {
+    padding: 3.5px 5px !important;
+    font-size: 7.5pt !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    border: 1px solid #94a3b8 !important;
+    text-align: left !important;
+    text-transform: uppercase !important;
+  }
+
+  .print-table .th-no { width: 32px !important; text-align: center !important; }
+  .print-table .th-status { width: 105px !important; text-align: center !important; }
+  .print-table .th-remarks { width: 140px !important; }
+
+  .print-table tbody tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .print-table td {
+    padding: 2.5px 5px !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #0f172a !important;
+    vertical-align: middle !important;
+    font-size: 8pt !important;
+  }
+
+  .print-table td:first-child {
+    text-align: center !important;
+    font-weight: 700 !important;
+    color: #334155 !important;
+  }
+
+  .print-table .detail-status {
+    text-align: center !important;
+    font-weight: 700 !important;
+    font-size: 8pt !important;
+  }
+
+  .print-table .detail-status.s-ok {
+    color: #059669 !important;
+    font-weight: 800 !important;
+  }
+
+  .print-table .detail-status.s-nok {
+    color: #dc2626 !important;
+    font-weight: 800 !important;
+  }
+
+  .print-verification {
+    padding: 5px 12px !important;
+    font-size: 8pt !important;
+    border-top: 1.5px solid #0f172a !important;
+    border-bottom: 1px solid #cbd5e1 !important;
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    line-height: 1.2 !important;
+  }
+
+  .print-signatures {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 12px !important;
+    padding: 6px 12px 8px !important;
+    background: #ffffff !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .sig-block {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 0 !important;
+  }
+
+  .sig-title {
+    font-size: 8pt !important;
+    color: #334155 !important;
+    font-weight: 600 !important;
+    line-height: 1.1 !important;
+  }
+
+  .sig-line {
+    width: 110px !important;
+    border-bottom: 1.5px solid #0f172a !important;
+    margin-top: 26px !important;
+    margin-bottom: 2px !important;
+  }
+
+  .sig-name {
+    font-size: 8.5pt !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    line-height: 1.1 !important;
+  }
 }
+
