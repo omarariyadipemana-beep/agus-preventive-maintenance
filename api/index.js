@@ -119,7 +119,15 @@ app.use((req, res, next) => {
 });
 
 app.use('/api', apiLimiter);
-app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use(express.static(path.join(__dirname, '..', 'public'), {
+  etag: false,
+  maxAge: 0,
+  setHeaders: (res, path) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+  }
+}));
 
 // Inisialisasi Supabase Client
 const supabaseUrl = process.env.SUPABASE_URL;

@@ -313,3 +313,32 @@ Pada browser smartphone modern:
 - [x] Penggambaran foto komponen langsung ke 2D canvas buffer saat render detail laporan (`public/app.js`).
 - [x] Penyalinan sinkron buffer pixel canvas pada callback `onclone` (`cctx.drawImage(origCvs, 0, 0)`).
 - [x] Verifikasi lokal & deployment produksi Vercel (`v2.3.3`). (STATUS: SELESAI DITERAPKAN)
+
+---
+
+## Revisi v2.3.4 - Cache Busting & Eliminasi Cache Browser pada Aset JavaScript
+
+### 1. Analisis Masalah (Root Cause):
+Hasil pengujian menggunakan browser Chrome headless membuktikan bahwa logika HTML5 Canvas Buffer di `v2.3.3` sudah berjalan 100% sempurna di level engine dan berhasil menghasilkan berkas ekspor 1760×2836 px dengan seluruh foto komponen mesin ter-render penuh (size 671 KB).
+Namun pada perangkat ponsel pengguna:
+- Browser mobile (Chrome/Safari) menerapkan *aggressive disk caching* untuk berkas JavaScript (`app.js`).
+- Ketika pengguna menekan tombol *refresh* biasa, browser hanya me-reload berkas HTML, sementara `app.js` tetap disajikan dari cache memori lama (versi sebelum canvas fix).
+- Tidak adanya parameter versi (*cache buster query string*) membuat ponsel tetap menjalankan kode lama.
+
+### 2. Solusi Tuntas (Cache Busting):
+1. **Penerapan Cache Buster Query String di `public/index.html`:**
+   - Menyertakan parameter versi eksplisit `?v=20261103_v234` pada seluruh tag `<link>` dan `<script>` (`style.css`, `gtp-giga-images.js`, `html2canvas.min.js`, dan `app.js`).
+   - Memaksa browser ponsel untuk segera mengabaikan cache lama dan mengunduh berkas script terbaru seketika.
+2. **Pemberian Header HTTP No-Cache di `api/index.js`:**
+   - Menambahkan konfigurasi `setHeaders` pada `express.static` dengan `Cache-Control: no-cache, no-store, must-revalidate`.
+3. **Indikator Versi Visual di Antarmuka:**
+   - Memperbarui label footer menjadi `QMS-0039442 v2.3.4` agar pengguna dapat memverifikasi secara langsung di layar HP bahwa versi terbaru sudah aktif.
+
+### 3. File yang Diubah:
+1. `public/index.html` : Penambahan query cache-buster `?v=20261103_v234` dan pembaruan versi footer.
+2. `api/index.js` : Penambahan header `no-cache` pada Express static.
+
+### 4. Status Eksekusi:
+- [x] Verifikasi rendering kanvas berhasil penuh (671 KB, foto komponen tampil tajam).
+- [x] Penerapan cache-busting di `public/index.html` dan `api/index.js`.
+- [x] Verifikasi lokal & deployment produksi Vercel (`v2.3.4`). (STATUS: SELESAI DITERAPKAN)

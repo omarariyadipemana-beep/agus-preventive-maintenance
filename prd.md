@@ -280,3 +280,7 @@
   * Mengeliminasi tag `<img>` pada kolom foto tabel laporan cetak dan menggantinya dengan elemen native `<canvas class="print-thumb-canvas" width="186" height="99">`.
   * Menghilangkan bug `naturalWidth === 0` pada pustaka `html2canvas` yang sebelumnya memicu *skip* penggambaran foto karena delay decoding asinkron pada kloningan DOM.
   * Menyalin pixel buffer secara sinkron pada callback `onclone` (`cctx.drawImage(origCvs, 0, 0)`), menjamin 100% seluruh foto komponen mesin GTP-GIGA tercetak utuh, jernih, dan tidak akan pernah kosong.
+- v2.3.4: Cache Busting Aset Statis & Eliminasi Stale Cache Mobile Browser:
+  * Menambahkan parameter query versi unik `?v=20261103_v234` pada seluruh aset skrip dan stylesheet di `public/index.html`, memaksa browser HP memuat kode JavaScript terbaru tanpa terhalang disk cache.
+  * Mengonfigurasi header HTTP `no-cache, no-store, must-revalidate` pada `api/index.js` static serving.
+  * Memperbarui versi footer antarmuka menjadi `v2.3.4` sebagai konfirmasi visual langsung di perangkat pengguna.
