@@ -4,13 +4,13 @@
 # ==============================================================
 
 # --------------------------------------------------------------
-# STAGE 1: Dependency Builder (Kompilasi native better-sqlite3)
+# STAGE 1: Dependency Builder
 # --------------------------------------------------------------
-FROM node:20-bookworm-slim AS builder
+FROM node:22-bookworm-slim AS builder
 
 WORKDIR /app
 
-# Install dependensi compiler C/C++ yang dibutuhkan better-sqlite3
+# Install build dependencies jika dibutuhkan modul native
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3 \
     make \
@@ -19,13 +19,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY package*.json ./
 
-# Install dependensi produksi saja dan kompilasi modul native
+# Install dependensi produksi
 RUN npm ci --only=production
 
 # --------------------------------------------------------------
 # STAGE 2: Production Runner (Image ringan, aman & non-root)
 # --------------------------------------------------------------
-FROM node:20-bookworm-slim AS runner
+FROM node:22-bookworm-slim AS runner
 
 WORKDIR /app
 
@@ -54,3 +54,4 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 
 # Jalankan server Express
 CMD ["node", "server.js"]
+
