@@ -342,3 +342,37 @@ Namun pada perangkat ponsel pengguna:
 - [x] Verifikasi rendering kanvas berhasil penuh (671 KB, foto komponen tampil tajam).
 - [x] Penerapan cache-busting di `public/index.html` dan `api/index.js`.
 - [x] Verifikasi lokal & deployment produksi Vercel (`v2.3.4`). (STATUS: SELESAI DITERAPKAN)
+
+---
+
+## Revisi v2.4.0 - Implementasi OPSI 1: Pure Native HTML5 Canvas Report Generator (Zero html2canvas)
+
+### 1. Analisis & Alasan Pemilihan Opsi 1:
+Pustaka pihak ketiga `html2canvas` (200 KB) memiliki keterbatasan fundamental saat berjalan pada lingkungan browser ponsel (khususnya Chrome/Safari di Android dan iOS), di mana proses kloning DOM, iframe `about:blank`, dan parsing CSS memicu *silent drop* penggambaran kanvas demi penghematan memori mobile.
+Pengguna menyetujui penerapan **OPSI 1**: membuang pustaka `html2canvas` sepenuhnya dan menggantikannya dengan fungsi pelukis kanvas grafis native murni (`HTML5 Canvas 2D Context API`).
+
+### 2. Implementasi Teknis yang Dilakukan:
+1. **Pelepasan Dependensi `html2canvas.min.js`:**
+   - Menghapus pemanggilan skrip `html2canvas` di `public/index.html`.
+2. **Pembangunan Mesin Pelukis Dokumen Native (`generateInspectionReportCanvas` di `public/app.js`):**
+   - Melukis dokumen resmi standar pabrik (QMS-0039442) secara presisi dengan resolusi Retina 2x (`1760 × 2584 px`).
+   - Melukis bingkai luar, header judul, nomor dokumen, dan kotak informasi 5 kolom.
+   - Melukis tabel berlatar navy dengan pembagian kolom presisi (No, Gambar, Task List, Status, Keterangan).
+   - Melukis seluruh 19 foto komponen mesin GTP-GIGA menggunakan pemanggilan langsung `ctx.drawImage(imgObj, x, y, 72, 40)`. Foto 100% dijamin terlukis dengan ribuan gradasi warna asli tanpa risiko terlewati.
+   - Melukis *text wrapping* cerdas untuk deskripsi tugas yang panjang.
+   - Melukis badge status OK (hijau) dan NOT OKE (merah) serta kotak verifikasi dan garis tanda tangan tiga kolom.
+3. **Modal Pratinjau Interaktif (`#reportPreviewModal`):**
+   - Hasil render gambar JPG langsung ditampilkan seketika di layar HP dalam pop-up modal bersih.
+   - Pengguna dapat melihat hasil laporan secara utuh, mengklik tombol "Unduh JPG", atau langsung *tekan & tahan gambar (long-press)* untuk menyimpan gambar atau membagikannya ke WhatsApp.
+4. **Pembaruan Cache Buster Versi 2.4.0:**
+   - Parameter versi skrip diperbarui menjadi `?v=20261103_v240` dan footer menjadi `QMS-0039442 v2.4.0`.
+
+### 3. File yang Diubah:
+1. `public/index.html` : Penambahan elemen modal pratinjau gambar laporan, pelepasan `html2canvas`, pembaruan query versi.
+2. `public/app.js` : Integrasi mesin pelukis grafis native `generateInspectionReportCanvas` dan handler preview.
+3. `public/style.css` : Penambahan styling untuk `.report-preview-card` dan pratinjau responsif.
+
+### 4. Status Eksekusi:
+- [x] Prototipe Canvas Native teruji sukses (1760×2584 px, 19 foto komponen terlukis tajam).
+- [x] Implementasi mesin canvas native & modal pratinjau di kode sumber aplikasi.
+- [x] Verifikasi lokal & deployment produksi Vercel (`v2.4.0`). (STATUS: SELESAI DITERAPKAN)

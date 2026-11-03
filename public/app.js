@@ -687,6 +687,7 @@
     try {
       const res = await authFetch('/api/inspections/' + id);
       const data = await res.json();
+      state.currentDetailData = data;
       renderDetail(data);
     } catch(e) {
       showToast('Gagal memuat detail inspeksi', 'error');
@@ -780,216 +781,368 @@
     $('#printSigLogistic').textContent = data.logistic_leader_name || '_______________';
   }
 
-  // Export JPG (High-resolution crisp JPEG using html2canvas)
+// ============================================================
+  // PURE NATIVE CANVAS REPORT GENERATOR (Zero html2canvas)
+  // ============================================================
+  let activePreviewBlobUrl = null;
+
+  function openReportPreviewModal(imgUrl, filename, data) {
+    const modal = $('#reportPreviewModal');
+    if (!modal) return;
+
+    activePreviewBlobUrl = imgUrl;
+    const previewImg = $('#reportPreviewImg');
+    if (previewImg) previewImg.src = imgUrl;
+
+    const titleEl = $('#reportPreviewTitle');
+    if (titleEl) titleEl.textContent = `${data.form_id || 'Laporan'} — ${data.machine_type || ''}`;
+
+    const downloadBtn = $('#btnReportPreviewDownload');
+    if (downloadBtn) {
+      downloadBtn.onclick = () => {
+        const a = document.createElement('a');
+        a.href = imgUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        showToast('Mengunduh berkas gambar (JPG)...', 'success');
+      };
+    }
+
+    modal.classList.add('show');
+    modal.style.display = 'flex';
+  }
+
+  function closeReportPreviewModal() {
+    const modal = $('#reportPreviewModal');
+    if (!modal) return;
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+  }
+
+  $('#btnReportPreviewClose')?.addEventListener('click', closeReportPreviewModal);
+  $('#btnReportPreviewDismiss')?.addEventListener('click', closeReportPreviewModal);
+
+  async function generateInspectionReportCanvas(data) {
+    if (!data || !data.items) {
+      throw new Error('Data inspeksi tidak valid');
+    }
+
+    const isGtpGiga = (data.machine_type || '').trim() === 'GTP-GIGA';
+
+    // 1. Preload all task images
+    const imgMap = new Map();
+    if (isGtpGiga) {
+      await Promise.all(data.items.map(item => {
+        return new Promise(resolve => {
+          const img = new Image();
+          img.onload = () => { imgMap.set(item.item_no, img); resolve(); };
+          img.onerror = () => { imgMap.set(item.item_no, null); resolve(); };
+          img.src = getTaskImageSrc(item.item_no);
+        });
+      }));
+    }
+
+    // 2. Geometry & column layout
+    const width = 880;
+    const marginX = 20;
+    const contentW = width - (marginX * 2);
+    const colNoW = 38;
+    const colImgW = 86;
+    const colDescW = 436;
+    const colStatusW = 130;
+    const colRemarksW = 150;
+
+    function wrapText(ctx, text, maxWidth) {
+      const words = (text || '').split(' ');
+      const lines = [];
+      let currentLine = '';
+      for (const w of words) {
+        const testLine = currentLine ? currentLine + ' ' + w : w;
+        if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+          lines.push(currentLine);
+          currentLine = w;
+        } else {
+          currentLine = testLine;
+        }
+      }
+      if (currentLine) lines.push(currentLine);
+      return lines;
+    }
+
+    const measureCvs = document.createElement('canvas');
+    const mCtx = measureCvs.getContext('2d');
+    mCtx.font = '500 11px sans-serif';
+
+    const rowHeights = data.items.map(item => {
+      const lines = wrapText(mCtx, item.task_description, colDescW - 16);
+      const textH = lines.length * 15;
+      return Math.max(50, textH + 16);
+    });
+
+    const totalTableH = rowHeights.reduce((a, b) => a + b, 0);
+    const headerH = 142;
+    const tableHeaderH = 30;
+    const verificationH = 40;
+    const signaturesH = 110;
+    const paddingBottom = 20;
+    const totalHeight = headerH + tableHeaderH + totalTableH + verificationH + signaturesH + paddingBottom;
+
+    // 3. Create high-resolution 2x Retina canvas
+    const cvs = document.createElement('canvas');
+    cvs.width = width * 2;
+    cvs.height = Math.round(totalHeight * 2);
+    const ctx = cvs.getContext('2d');
+    ctx.scale(2, 2);
+
+    // Background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, totalHeight);
+
+    // Document outer frame
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(marginX, 16, contentW, totalHeight - 32);
+
+    // Title
+    ctx.fillStyle = '#0f172a';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('FORM PREVENTIVE MAINTENANCE', width / 2, 44);
+
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillStyle = '#1e293b';
+    ctx.fillText(data.machine_type || '-', width / 2, 64);
+
+    ctx.font = 'bold 9px sans-serif';
+    ctx.fillStyle = '#64748b';
+    ctx.textAlign = 'right';
+    ctx.fillText('QMS-0039442', marginX + contentW - 14, 34);
+
+    // Info Box Divider Lines
+    const infoY = 80;
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(marginX, infoY);
+    ctx.lineTo(marginX + contentW, infoY);
+    ctx.moveTo(marginX, infoY + 44);
+    ctx.lineTo(marginX + contentW, infoY + 44);
+    ctx.stroke();
+
+    // Info Box Content
+    const infoCols = [
+      { label: 'ID ALAT', val: data.equipment_id, x: marginX + 16 },
+      { label: 'LOKASI', val: data.location, x: marginX + 180 },
+      { label: 'MTC SUPPORT', val: data.mtc_support, x: marginX + 350 },
+      { label: 'TANGGAL', val: formatDate(data.inspection_date), x: marginX + 520 },
+      { label: 'FORM ID', val: data.form_id, x: marginX + 680 }
+    ];
+    infoCols.forEach(c => {
+      ctx.textAlign = 'left';
+      ctx.font = 'bold 8.5px sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText(c.label, c.x, infoY + 16);
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillStyle = '#0f172a';
+      ctx.fillText(c.val || '-', c.x, infoY + 34);
+    });
+
+    // Table Header (Navy)
+    const tY = infoY + 44;
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(marginX, tY, contentW, tableHeaderH);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('NO', marginX + (colNoW / 2), tY + 19);
+    ctx.fillText('GAMBAR', marginX + colNoW + (colImgW / 2), tY + 19);
+    ctx.textAlign = 'left';
+    ctx.fillText('TASK LIST', marginX + colNoW + colImgW + 12, tY + 19);
+    ctx.textAlign = 'center';
+    ctx.fillText('STATUS (OK/NOT OKE)', marginX + colNoW + colImgW + colDescW + (colStatusW / 2), tY + 19);
+    ctx.textAlign = 'left';
+    ctx.fillText('KETERANGAN', marginX + colNoW + colImgW + colDescW + colStatusW + 12, tY + 19);
+
+    // Header vertical lines
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 1;
+    let colX = marginX;
+    [colNoW, colImgW, colDescW, colStatusW].forEach(w => {
+      colX += w;
+      ctx.beginPath();
+      ctx.moveTo(colX, tY);
+      ctx.lineTo(colX, tY + tableHeaderH);
+      ctx.stroke();
+    });
+
+    // Draw Table Rows
+    let currentY = tY + tableHeaderH;
+    data.items.forEach((item, idx) => {
+      const rH = rowHeights[idx];
+
+      ctx.fillStyle = idx % 2 === 0 ? '#ffffff' : '#fcfcfd';
+      ctx.fillRect(marginX, currentY, contentW, rH);
+
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(marginX, currentY, contentW, rH);
+
+      let curColX = marginX;
+      [colNoW, colImgW, colDescW, colStatusW].forEach(w => {
+        curColX += w;
+        ctx.beginPath();
+        ctx.moveTo(curColX, currentY);
+        ctx.lineTo(curColX, currentY + rH);
+        ctx.stroke();
+      });
+
+      // No
+      ctx.fillStyle = '#334155';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(String(item.item_no), marginX + (colNoW / 2), currentY + (rH / 2) + 4);
+
+      // Gambar (Direct ctx.drawImage)
+      const imgObj = imgMap.get(item.item_no);
+      const imgBoxW = 72;
+      const imgBoxH = 40;
+      const imgBoxX = marginX + colNoW + ((colImgW - imgBoxW) / 2);
+      const imgBoxY = currentY + ((rH - imgBoxH) / 2);
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.fillRect(imgBoxX, imgBoxY, imgBoxW, imgBoxH);
+      ctx.strokeStyle = '#cbd5e1';
+      ctx.strokeRect(imgBoxX, imgBoxY, imgBoxW, imgBoxH);
+
+      if (imgObj && imgObj.complete && imgObj.naturalWidth > 0) {
+        ctx.drawImage(imgObj, imgBoxX + 1, imgBoxY + 1, imgBoxW - 2, imgBoxH - 2);
+      } else {
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('-', imgBoxX + (imgBoxW / 2), imgBoxY + (imgBoxH / 2) + 4);
+      }
+
+      // Task Description
+      ctx.textAlign = 'left';
+      ctx.font = '500 11px sans-serif';
+      ctx.fillStyle = '#0f172a';
+      const lines = wrapText(ctx, item.task_description, colDescW - 16);
+      const lineH = 15;
+      const startTextY = currentY + ((rH - (lines.length * lineH)) / 2) + 11;
+      lines.forEach((line, lIdx) => {
+        ctx.fillText(line, marginX + colNoW + colImgW + 10, startTextY + (lIdx * lineH));
+      });
+
+      // Status
+      const statusX = marginX + colNoW + colImgW + colDescW + (colStatusW / 2);
+      const statusY = currentY + (rH / 2);
+      const isOK = item.status === 'OK';
+      const isNOK = item.status === 'NOT OKE';
+
+      if (isOK || isNOK) {
+        const badgeW = isOK ? 56 : 82;
+        const badgeH = 22;
+        const bX = statusX - (badgeW / 2);
+        const bY = statusY - (badgeH / 2);
+
+        ctx.fillStyle = isOK ? '#ecfdf5' : '#fff1f2';
+        ctx.fillRect(bX, bY, badgeW, badgeH);
+        ctx.strokeStyle = isOK ? '#a7f3d0' : '#fecdd3';
+        ctx.strokeRect(bX, bY, badgeW, badgeH);
+
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillStyle = isOK ? '#059669' : '#e11d48';
+        ctx.textAlign = 'center';
+        ctx.fillText(item.status, statusX, statusY + 3.5);
+      } else {
+        ctx.font = 'bold 11px sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        ctx.textAlign = 'center';
+        ctx.fillText('-', statusX, statusY + 4);
+      }
+
+      // Keterangan
+      ctx.textAlign = 'left';
+      ctx.font = '10.5px sans-serif';
+      ctx.fillStyle = item.remarks ? '#334155' : '#94a3b8';
+      ctx.fillText(item.remarks || '-', marginX + colNoW + colImgW + colDescW + colStatusW + 10, currentY + (rH / 2) + 4);
+
+      currentY += rH;
+    });
+
+    // Verification Box
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(marginX, currentY, contentW, verificationH);
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(marginX + 0.5, currentY + 0.5, contentW - 1, verificationH - 1);
+
+    ctx.font = '10.5px sans-serif';
+    ctx.fillStyle = '#0f172a';
+    ctx.textAlign = 'left';
+    ctx.fillText('Hasil Verifikasi : ', marginX + 16, currentY + 24);
+    const verTextW = ctx.measureText('Hasil Verifikasi : ').width;
+
+    ctx.font = 'bold 11px sans-serif';
+    ctx.fillText(data.verification_result || 'OK', marginX + 16 + verTextW, currentY + 24);
+    const valW = ctx.measureText(data.verification_result || 'OK').width;
+
+    ctx.font = '10px sans-serif';
+    ctx.fillStyle = '#475569';
+    ctx.fillText(' (dilakukan oleh Group Leader / LPU, coret yang tidak perlu)', marginX + 16 + verTextW + valW, currentY + 24);
+
+    // Signatures Section
+    const sigY = currentY + verificationH;
+    const sigColW = contentW / 3;
+    const roles = [
+      { title: 'Maintenance Support', name: data.maintenance_support_name || '_______________' },
+      { title: 'Group Leader/LPU', name: data.group_leader_name || '_______________' },
+      { title: 'Logistik Leader', name: data.logistic_leader_name || '_______________' }
+    ];
+
+    roles.forEach((r, idx) => {
+      const colCenterX = marginX + (idx * sigColW) + (sigColW / 2);
+      ctx.textAlign = 'center';
+      ctx.font = '600 10.5px sans-serif';
+      ctx.fillStyle = '#334155';
+      ctx.fillText(r.title, colCenterX, sigY + 26);
+
+      const lineW = 120;
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(colCenterX - (lineW / 2), sigY + 74);
+      ctx.lineTo(colCenterX + (lineW / 2), sigY + 74);
+      ctx.stroke();
+
+      ctx.font = 'bold 11px sans-serif';
+      ctx.fillStyle = '#0f172a';
+      ctx.fillText(r.name, colCenterX, sigY + 92);
+    });
+
+    return cvs;
+  }
+
+  // Export JPG (Pure Native Canvas Report Generator)
   const btnExportJPG = $('#btnExportJPG');
   if (btnExportJPG) {
     btnExportJPG.addEventListener('click', async () => {
-      const area = $('#printArea');
-      if (!area) return;
+      if (!state.currentDetailData) {
+        showToast('Data laporan belum siap', 'error');
+        return;
+      }
 
-      showToast('Menyiapkan gambar laporan...', 'info');
+      showToast('Melukis gambar laporan resmi...', 'info');
 
       try {
-        if (typeof html2canvas === 'undefined') {
-          throw new Error('Pustaka html2canvas belum termuat.');
-        }
+        const data = state.currentDetailData;
+        const canvas = await generateInspectionReportCanvas(data);
 
-        // Ensure all thumbnail canvases have their photos drawn
-        const canvases = area.querySelectorAll('.print-thumb-canvas');
-        await Promise.all([...canvases].map(cvs => {
-          return new Promise(resolve => {
-            const itemNo = cvs.dataset.itemNo;
-            const src = getTaskImageSrc(itemNo);
-            if (!src) return resolve();
-            const ctx = cvs.getContext('2d');
-            const img = new Image();
-            img.onload = () => {
-              ctx.drawImage(img, 0, 0, cvs.width, cvs.height);
-              resolve();
-            };
-            img.onerror = resolve;
-            img.src = src;
-          });
-        }));
-
-        // Render at 2x resolution and standard 880px width for official factory form layout
-        const canvas = await html2canvas(area, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: '#ffffff',
-          logging: false,
-          onclone: (clonedDoc) => {
-            const clonedArea = clonedDoc.getElementById('printArea');
-            if (!clonedArea) return;
-
-            // Copy pixel buffers from original canvases to cloned canvases
-            const clonedCanvases = clonedArea.querySelectorAll('.print-thumb-canvas');
-            clonedCanvases.forEach(clonedCvs => {
-              const itemNo = clonedCvs.dataset.itemNo;
-              const origCvs = area.querySelector(`.print-thumb-canvas[data-item-no="${itemNo}"]`);
-              if (origCvs) {
-                clonedCvs.width = origCvs.width;
-                clonedCvs.height = origCvs.height;
-                const cctx = clonedCvs.getContext('2d');
-                if (cctx) cctx.drawImage(origCvs, 0, 0);
-              }
-              clonedCvs.style.width = '70px';
-              clonedCvs.style.height = '40px';
-              clonedCvs.style.display = 'block';
-              clonedCvs.style.margin = 'auto';
-              clonedCvs.style.borderRadius = '3px';
-            });
-
-            // 1. Force standard 880px document width with clean white background
-            clonedArea.style.width = '880px';
-            clonedArea.style.minWidth = '880px';
-            clonedArea.style.maxWidth = '880px';
-            clonedArea.style.margin = '0 auto';
-            clonedArea.style.padding = '24px 28px';
-            clonedArea.style.boxSizing = 'border-box';
-            clonedArea.style.background = '#ffffff';
-            clonedArea.style.borderRadius = '0';
-            clonedArea.style.boxShadow = 'none';
-
-            // 2. Ensure table layout is standard corporate table
-            const table = clonedArea.querySelector('.print-table');
-            if (table) {
-              table.style.display = 'table';
-              table.style.width = '100%';
-              table.style.borderCollapse = 'collapse';
-              table.style.fontSize = '12px';
-              table.style.lineHeight = '1.35';
-            }
-
-            const thead = clonedArea.querySelector('.print-table thead');
-            if (thead) {
-              thead.style.display = 'table-header-group';
-            }
-
-            const thElements = clonedArea.querySelectorAll('.print-table th');
-            thElements.forEach(th => {
-              th.style.padding = '7px 8px';
-              th.style.fontSize = '11px';
-              th.style.fontWeight = '700';
-              th.style.backgroundColor = '#1e293b';
-              th.style.color = '#ffffff';
-              th.style.border = '1px solid #334155';
-              th.style.textTransform = 'uppercase';
-            });
-
-            const tbody = clonedArea.querySelector('.print-table tbody');
-            if (tbody) {
-              tbody.style.display = 'table-row-group';
-              tbody.style.background = '#ffffff';
-              tbody.style.padding = '0';
-              tbody.style.gap = '0';
-            }
-
-            const rows = clonedArea.querySelectorAll('.print-table tbody tr');
-            rows.forEach(tr => {
-              tr.style.display = 'table-row';
-              tr.style.background = '#ffffff';
-              tr.style.border = 'none';
-              tr.style.borderRadius = '0';
-              tr.style.boxShadow = 'none';
-              tr.style.padding = '0';
-              tr.style.gap = '0';
-            });
-
-            const cells = clonedArea.querySelectorAll('.print-table td');
-            cells.forEach(td => {
-              td.style.display = 'table-cell';
-              td.style.verticalAlign = 'middle';
-              td.style.border = '1px solid #cbd5e1';
-              td.style.padding = '5px 8px';
-              td.style.fontSize = '11.5px';
-              td.style.lineHeight = '1.35';
-            });
-
-            // Column specific widths and alignments
-            const noCells = clonedArea.querySelectorAll('.print-table .td-no');
-            noCells.forEach(td => {
-              td.style.width = '36px';
-              td.style.textAlign = 'center';
-              td.style.fontWeight = '700';
-              td.style.color = '#334155';
-            });
-
-            const imgCells = clonedArea.querySelectorAll('.print-table .td-img');
-            imgCells.forEach(td => {
-              td.style.width = '84px';
-              td.style.textAlign = 'center';
-              td.style.padding = '4px';
-            });
-
-            const thumbs = clonedArea.querySelectorAll('.print-thumb-wrap');
-            thumbs.forEach(wrap => {
-              wrap.style.width = '72px';
-              wrap.style.height = '42px';
-              wrap.style.background = '#f8fafc';
-              wrap.style.border = '1px solid #cbd5e1';
-              wrap.style.borderRadius = '4px';
-              wrap.style.display = 'inline-flex';
-              wrap.style.alignItems = 'center';
-              wrap.style.justifyContent = 'center';
-              wrap.style.margin = '0 auto';
-              wrap.style.overflow = 'hidden';
-            });
-
-            const imgs = clonedArea.querySelectorAll('.print-thumb-img');
-            imgs.forEach(img => {
-              img.style.maxWidth = '70px';
-              img.style.maxHeight = '40px';
-              img.style.width = 'auto';
-              img.style.height = 'auto';
-              img.style.display = 'block';
-              img.style.margin = 'auto';
-              img.style.objectFit = 'contain';
-            });
-
-            const descCells = clonedArea.querySelectorAll('.print-table .td-desc');
-            descCells.forEach(td => {
-              td.style.width = 'auto';
-              td.style.fontWeight = '500';
-              td.style.color = '#0f172a';
-            });
-
-            const statusCells = clonedArea.querySelectorAll('.print-table .detail-status');
-            statusCells.forEach(td => {
-              td.style.width = '115px';
-              td.style.textAlign = 'center';
-              td.style.fontWeight = '800';
-              td.style.fontSize = '11px';
-            });
-
-            const remarksCells = clonedArea.querySelectorAll('.print-table .td-remarks');
-            remarksCells.forEach(td => {
-              td.style.width = '140px';
-              td.style.color = '#334155';
-            });
-
-            // Header info grid
-            const infoGrid = clonedArea.querySelector('.print-info-grid');
-            if (infoGrid) {
-              infoGrid.style.display = 'grid';
-              infoGrid.style.gridTemplateColumns = 'repeat(5, 1fr)';
-              infoGrid.style.gap = '8px 12px';
-              infoGrid.style.padding = '10px 14px';
-            }
-
-            // Signatures
-            const sigs = clonedArea.querySelector('.print-signatures');
-            if (sigs) {
-              sigs.style.display = 'grid';
-              sigs.style.gridTemplateColumns = 'repeat(3, 1fr)';
-              sigs.style.gap = '20px';
-              sigs.style.padding = '14px 20px 8px';
-            }
-          }
-        });
-
-        const rawFormId = ($('#printFormId').textContent || 'LAPORAN').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+        const rawFormId = (data.form_id || 'LAPORAN').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
         const filename = `FORM_PREVENTIVE_MTC_${rawFormId}.jpg`;
 
         canvas.toBlob((blob) => {
@@ -997,6 +1150,7 @@
             showToast('Gagal memproses gambar laporan', 'error');
             return;
           }
+
           const url = URL.createObjectURL(blob);
           const a = document.createElement('a');
           a.href = url;
@@ -1004,12 +1158,15 @@
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
-          showToast('Gambar laporan berhasil diunduh (JPG)!', 'success');
+
+          // Show Preview Modal
+          openReportPreviewModal(url, filename, data);
+
+          showToast('Gambar laporan berhasil dibuat & diunduh (JPG)!', 'success');
         }, 'image/jpeg', 0.95);
       } catch (err) {
         console.error('Export JPG error:', err);
-        showToast('Gagal mengunduh gambar laporan', 'error');
+        showToast('Gagal membuat gambar laporan: ' + err.message, 'error');
       }
     });
   }

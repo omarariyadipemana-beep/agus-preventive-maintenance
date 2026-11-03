@@ -3082,3 +3082,70 @@ body.role-user .btn-icon[title="Hapus"] {
   }
 }
 
+/* Report Preview Modal */
+.modal-card.report-preview-card {
+  max-width: 640px;
+  width: 95%;
+  max-height: 90vh;
+  padding: var(--space-4) var(--space-5);
+  display: flex;
+  flex-direction: column;
+}
+
+.report-preview-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--slate-100);
+}
+
+.report-preview-header h3 {
+  font-size: var(--font-md);
+  font-weight: 800;
+  color: var(--slate-900);
+  margin: 0;
+}
+
+.report-preview-header p {
+  font-size: var(--font-xs);
+  color: var(--slate-500);
+  margin-top: 2px;
+}
+
+.report-preview-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-3) 0;
+  text-align: center;
+  background: var(--slate-50);
+  border-radius: var(--radius-md);
+  margin: var(--space-3) 0;
+}
+
+.report-preview-img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12);
+  display: block;
+  margin: 0 auto;
+}
+
+.report-preview-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding-top: var(--space-2);
+}
+
+.report-preview-hint {
+  font-size: 0.75rem;
+  color: var(--slate-600);
+  flex: 1;
+  min-width: 200px;
+  line-height: 1.3;
+}

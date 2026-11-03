@@ -284,3 +284,7 @@
   * Menambahkan parameter query versi unik `?v=20261103_v234` pada seluruh aset skrip dan stylesheet di `public/index.html`, memaksa browser HP memuat kode JavaScript terbaru tanpa terhalang disk cache.
   * Mengonfigurasi header HTTP `no-cache, no-store, must-revalidate` pada `api/index.js` static serving.
   * Memperbarui versi footer antarmuka menjadi `v2.3.4` sebagai konfirmasi visual langsung di perangkat pengguna.
+- v2.4.0: Pure Native HTML5 Canvas Report Generator (Eliminasi html2canvas):
+  * Mengganti pustaka pihak ketiga `html2canvas` dengan mesin grafis native HTML5 2D Context API (`generateInspectionReportCanvas`), melukis tabel laporan dan menaruh foto komponen GTP-GIGA secara presisi (`ctx.drawImage`) dengan resolusi 2x Retina (1760 × 2584 px).
+  * Menghilangkan 100% kegagalan render gambar, async decode race conditions, dan memori leak pada browser ponsel.
+  * Menyediakan modal pratinjau instan di mana pengguna di HP dapat langsung melihat hasil gambar dan menyimpannya lewat tombol unduh maupun fitur *long-press* simpan/bagikan ke WhatsApp.

@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="icon" type="image/png" href="https://img.icons8.com/?size=80&id=J5OHINhSdwbD&format=png">
-  <link rel="stylesheet" href="style.css?v=20261103_v234">
+  <link rel="stylesheet" href="style.css?v=20261103_v240">
 </head>
 <body>
   <!-- SIDEBAR NAVIGATION -->
@@ -40,7 +40,7 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         <span>Kunci Layar</span>
       </button>
-      <span class="sidebar-version">QMS-0039442 v2.3.4</span>
+      <span class="sidebar-version">QMS-0039442 v2.4.0</span>
     </div>
   </aside>
 
@@ -420,6 +420,34 @@
     </div>
   </div>
 
+  <!-- Preview Modal Gambar Laporan Lengkap (JPG) -->
+  <div class="modal-overlay" id="reportPreviewModal" style="display:none;">
+    <div class="modal-card report-preview-card">
+      <div class="report-preview-header">
+        <div>
+          <h3 id="reportPreviewTitle">Laporan Preventive Maintenance</h3>
+          <p>Format Formulir Resmi (JPG Siap Bagikan ke WhatsApp)</p>
+        </div>
+        <button type="button" class="btn-close-modal" id="btnReportPreviewClose" aria-label="Tutup">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="report-preview-body">
+        <img id="reportPreviewImg" class="report-preview-img" alt="Laporan Preventive Maintenance">
+      </div>
+      <div class="report-preview-footer">
+        <span class="report-preview-hint">💡 Di HP, Anda juga bisa <strong>tekan & tahan gambar</strong> untuk langsung simpan atau bagikan ke WhatsApp.</span>
+        <div style="display:flex;gap:8px;">
+          <button type="button" class="btn btn-outline" id="btnReportPreviewDismiss">Tutup</button>
+          <button type="button" class="btn btn-primary" id="btnReportPreviewDownload">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Unduh JPG
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- PIN LOCK OVERLAY -->
   <div class="pin-overlay" id="pinOverlay">
     <div class="pin-card">
@@ -462,8 +490,7 @@
     </div>
   </div>
 
-  <script src="gtp-giga-images.js?v=20261103_v234"></script>
-  <script src="html2canvas.min.js?v=20261103_v234"></script>
-  <script src="app.js?v=20261103_v234"></script>
+  <script src="gtp-giga-images.js?v=20261103_v240"></script>
+  <script src="app.js?v=20261103_v240"></script>
 </body>
 </html>
