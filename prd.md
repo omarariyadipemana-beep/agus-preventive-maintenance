@@ -272,3 +272,7 @@
   * Menyematkan seluruh 19 foto komponen GTP-GIGA langsung sebagai Base64 Data URL melalui modul lokal `public/gtp-giga-images.js` (159 KB), menghilangkan dependensi jaringan, CORS cache collision, dan delay muat gambar.
   * Menghapus atribut `crossOrigin="anonymous"` pada tag gambar detail laporan yang sebelumnya memicu penolakan cache browser.
   * Menambahkan parameter `windowWidth: 1024` dan `allowTaint: true` pada `html2canvas` agar hasil unduh JPG selalu proporsional dalam format tabel resmi standar perusahaan (QMS-0039442) terlepas dari resolusi layar perangkat yang digunakan.
+- v2.3.2: Standardisasi Format Export JPG Resmi Pabrik (Fixed 880px / 1760px Retina Layout):
+  * Mengintegrasikan fungsi `onclone` pada `html2canvas` yang secara terisolasi memformat dokumen cetak `#printArea` pada lebar tetap 880px (proporsi A4 resmi perusahaan), mencegah kanvas tertekan mengikuti viewport sempit ponsel (342px).
+  * Memperbesar dimensi wadah thumbnail foto komponen menjadi 72px × 42px (hampir 3x lebih besar) dengan latar belakang kontras lembut (#f8fafc), menampilkan komponen mesin GTP-GIGA secara tajam, jelas, dan berkontras tinggi.
+  * Menjamin seluruh teks kolom Task List, Status, Keterangan, dan tanda tangan tersusun presisi dalam layout tabel formal tanpa teks terlipat sempit, siap kirim ke WhatsApp pimpinan.

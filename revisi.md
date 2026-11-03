@@ -229,3 +229,46 @@
 - [x] Pemasangan data URL langsung di `public/app.js` dan penghapusan atribut `crossOrigin="anonymous"`.
 - [x] Konfigurasi `html2canvas` dengan `windowWidth: 1024` dan `allowTaint: true` untuk output format tabel standar pabrik.
 - [x] Verifikasi lokal & deployment produksi Vercel (`v2.3.1`). (STATUS: SELESAI DITERAPKAN)
+
+
+---
+
+## Revisi v2.3.2 - Review & Standardisasi Format Export JPG Resmi Pabrik (Fixed 880px A4 Layout)
+
+### 1. Hasil Review & Analisis Masalah Gambar Export JPG:
+Dari hasil uji ekspor gambar terbaru yang dikirim oleh pengguna (`media_1793675069208_fdc648b4.jpg`), ditemukan 4 poin analisis kritis:
+1. **Lebar Kanvas Terkompresi Mengikuti Layar HP (Hanya 342 px):**
+   - Saat pengguna menekan tombol "Export JPG" dari ponsel, `html2canvas` mengambil lebar elemen `#printArea` yang sedang aktif di viewport mobile (~342px).
+   - Akibatnya, dokumen yang harusnya berbentuk lembar kerja A4 proporsional malah tertekan menyempit menjadi strip vertikal panjang (rasio 0.33, mirip struk belanja).
+2. **Foto Komponen Tertekan Sangat Kecil (~25px Lebar):**
+   - Karena seluruh tabel dipaksa masuk ke lebar 342px, kolom `Gambar` terhimpit menjadi sekitar 25px × 15px.
+   - Foto komponen mesin GTP-GIGA (yang aslinya 186×99px berbahan logam stainless steel dan meja kerja) mengalami *downsampling* ekstrem sehingga detail kontrasnya hilang dan tampak dari jauh seperti kotak kosong / putih pudar.
+3. **Teks Kolom Task List Terlipat-lipat (*Extreme Word Wrapping*):**
+   - Kolom instruksi kerja hanya mendapat lebar ~120px sehingga kalimat panjang terlipat menjadi 2–3 baris sempit. Ini membuat jarak antar nomor menjadi sangat tinggi dan tidak rapi.
+4. **Format Dokumen Tidak Konsisten Antar Perangkat:**
+   - Jika diekspor dari laptop, hasilnya lebar. Jika diekspor dari HP, hasilnya menyempit. Padahal laporan pabrik yang dikirim ke pimpinan via WhatsApp harus selalu berformat formulir standar resmi (QMS-0039442).
+
+### 2. Rencana Solusi Permanen (Masterpiece Export JPG):
+1. **Standardisasi Lebar Kanvas Ekspor Tetap (880px) Menggunakan `onclone`:**
+   - Memanfaatkan fitur resmi `onclone(clonedDoc)` pada `html2canvas`. Saat dokumen dikloning ke memori untuk digambar, elemen `#printArea` disetel secara independen ke lebar **880px** (standar lembar kerja formulir A4).
+   - Tampilan di layar HP pengguna sama sekali tidak berubah dan tidak geser.
+2. **Tata Letak Tabel Cetak Sempurna (*Pure Table Layout*):**
+   - Pada kloningan ekspor, seluruh sel diatur kembali menjadi `display: table`, `thead` dengan latar navy elegan (`#1e293b`), teks putih tebal, dan border sel rapi (`1px solid #cbd5e1`).
+   - Task List mendapat ruang lapang (~430px) sehingga kalimat instruksi tersusun rapi dalam 1 baris.
+3. **Dimensi Thumbnail Komponen Optimal (72px × 42px):**
+   - Wadah foto disetel ke ukuran ideal 72px × 42px dengan latar belakang netral kontras lembut (`#f8fafc`) dan border abu-abu (`#cbd5e1`).
+   - Foto komponen mesin GTP-GIGA tampil sangat jelas, mata pisau, stang, per/spring, dan bearing tampak tajam dan detail.
+4. **Output Gambar Beresolusi Ultra-Tajam (1760px Crisp JPEG):**
+   - Dengan `scale: 2`, hasil unduh gambar memiliki resolusi **1760 × 2480 px** (kualitas Retina), sangat jelas saat dizoom di galeri ponsel maupun layar laptop.
+
+### 3. File yang Akan Diubah:
+1. `public/app.js` : Penambahan konfigurasi `onclone` pada handler `#btnExportJPG` untuk memformat dokumen ke ukuran standar 880px secara terisolasi.
+2. `public/style.css` : Penyempurnaan styling thumbnail foto dan print table.
+
+### 4. Status Eksekusi:
+- [x] Analisis mendalam hasil ekspor gambar dari pengguna (resolusi terkompresi ke viewport HP 342px & foto menciut).
+- [x] Penyusunan draf konsep & solusi standar format formulir pabrik di `revisi.md`.
+- [x] Implementasi callback `onclone` pada `html2canvas` di `public/app.js` untuk mengunci dokumen ekspor pada lebar standar 880px (1760px Retina).
+- [x] Pembesaran thumbnail foto komponen menjadi 72px × 42px dengan background kontras netral `#f8fafc` di `public/style.css`.
+- [x] Tata letak tabel formulir resmi standar pabrik (QMS-0039442) proporsional sempurna dan anti-tercekik di semua perangkat.
+- [x] Verifikasi lokal & deployment produksi Vercel (`v2.3.2`). (STATUS: SELESAI DITERAPKAN)

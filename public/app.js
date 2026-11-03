@@ -788,14 +788,163 @@
           });
         }));
 
-        // Render at 2x resolution for ultra-sharp text and crisp photos
+        // Render at 2x resolution and standard 880px width for official factory form layout
         const canvas = await html2canvas(area, {
           scale: 2,
-          windowWidth: 1024,
           useCORS: true,
           allowTaint: true,
           backgroundColor: '#ffffff',
-          logging: false
+          logging: false,
+          onclone: (clonedDoc) => {
+            const clonedArea = clonedDoc.getElementById('printArea');
+            if (!clonedArea) return;
+
+            // 1. Force standard 880px document width with clean white background
+            clonedArea.style.width = '880px';
+            clonedArea.style.minWidth = '880px';
+            clonedArea.style.maxWidth = '880px';
+            clonedArea.style.margin = '0 auto';
+            clonedArea.style.padding = '24px 28px';
+            clonedArea.style.boxSizing = 'border-box';
+            clonedArea.style.background = '#ffffff';
+            clonedArea.style.borderRadius = '0';
+            clonedArea.style.boxShadow = 'none';
+
+            // 2. Ensure table layout is standard corporate table
+            const table = clonedArea.querySelector('.print-table');
+            if (table) {
+              table.style.display = 'table';
+              table.style.width = '100%';
+              table.style.borderCollapse = 'collapse';
+              table.style.fontSize = '12px';
+              table.style.lineHeight = '1.35';
+            }
+
+            const thead = clonedArea.querySelector('.print-table thead');
+            if (thead) {
+              thead.style.display = 'table-header-group';
+            }
+
+            const thElements = clonedArea.querySelectorAll('.print-table th');
+            thElements.forEach(th => {
+              th.style.padding = '7px 8px';
+              th.style.fontSize = '11px';
+              th.style.fontWeight = '700';
+              th.style.backgroundColor = '#1e293b';
+              th.style.color = '#ffffff';
+              th.style.border = '1px solid #334155';
+              th.style.textTransform = 'uppercase';
+            });
+
+            const tbody = clonedArea.querySelector('.print-table tbody');
+            if (tbody) {
+              tbody.style.display = 'table-row-group';
+              tbody.style.background = '#ffffff';
+              tbody.style.padding = '0';
+              tbody.style.gap = '0';
+            }
+
+            const rows = clonedArea.querySelectorAll('.print-table tbody tr');
+            rows.forEach(tr => {
+              tr.style.display = 'table-row';
+              tr.style.background = '#ffffff';
+              tr.style.border = 'none';
+              tr.style.borderRadius = '0';
+              tr.style.boxShadow = 'none';
+              tr.style.padding = '0';
+              tr.style.gap = '0';
+            });
+
+            const cells = clonedArea.querySelectorAll('.print-table td');
+            cells.forEach(td => {
+              td.style.display = 'table-cell';
+              td.style.verticalAlign = 'middle';
+              td.style.border = '1px solid #cbd5e1';
+              td.style.padding = '5px 8px';
+              td.style.fontSize = '11.5px';
+              td.style.lineHeight = '1.35';
+            });
+
+            // Column specific widths and alignments
+            const noCells = clonedArea.querySelectorAll('.print-table .td-no');
+            noCells.forEach(td => {
+              td.style.width = '36px';
+              td.style.textAlign = 'center';
+              td.style.fontWeight = '700';
+              td.style.color = '#334155';
+            });
+
+            const imgCells = clonedArea.querySelectorAll('.print-table .td-img');
+            imgCells.forEach(td => {
+              td.style.width = '84px';
+              td.style.textAlign = 'center';
+              td.style.padding = '4px';
+            });
+
+            const thumbs = clonedArea.querySelectorAll('.print-thumb-wrap');
+            thumbs.forEach(wrap => {
+              wrap.style.width = '72px';
+              wrap.style.height = '42px';
+              wrap.style.background = '#f8fafc';
+              wrap.style.border = '1px solid #cbd5e1';
+              wrap.style.borderRadius = '4px';
+              wrap.style.display = 'inline-flex';
+              wrap.style.alignItems = 'center';
+              wrap.style.justifyContent = 'center';
+              wrap.style.margin = '0 auto';
+              wrap.style.overflow = 'hidden';
+            });
+
+            const imgs = clonedArea.querySelectorAll('.print-thumb-img');
+            imgs.forEach(img => {
+              img.style.maxWidth = '70px';
+              img.style.maxHeight = '40px';
+              img.style.width = 'auto';
+              img.style.height = 'auto';
+              img.style.display = 'block';
+              img.style.margin = 'auto';
+              img.style.objectFit = 'contain';
+            });
+
+            const descCells = clonedArea.querySelectorAll('.print-table .td-desc');
+            descCells.forEach(td => {
+              td.style.width = 'auto';
+              td.style.fontWeight = '500';
+              td.style.color = '#0f172a';
+            });
+
+            const statusCells = clonedArea.querySelectorAll('.print-table .detail-status');
+            statusCells.forEach(td => {
+              td.style.width = '115px';
+              td.style.textAlign = 'center';
+              td.style.fontWeight = '800';
+              td.style.fontSize = '11px';
+            });
+
+            const remarksCells = clonedArea.querySelectorAll('.print-table .td-remarks');
+            remarksCells.forEach(td => {
+              td.style.width = '140px';
+              td.style.color = '#334155';
+            });
+
+            // Header info grid
+            const infoGrid = clonedArea.querySelector('.print-info-grid');
+            if (infoGrid) {
+              infoGrid.style.display = 'grid';
+              infoGrid.style.gridTemplateColumns = 'repeat(5, 1fr)';
+              infoGrid.style.gap = '8px 12px';
+              infoGrid.style.padding = '10px 14px';
+            }
+
+            // Signatures
+            const sigs = clonedArea.querySelector('.print-signatures');
+            if (sigs) {
+              sigs.style.display = 'grid';
+              sigs.style.gridTemplateColumns = 'repeat(3, 1fr)';
+              sigs.style.gap = '20px';
+              sigs.style.padding = '14px 20px 8px';
+            }
+          }
         });
 
         const rawFormId = ($('#printFormId').textContent || 'LAPORAN').trim().replace(/[^a-zA-Z0-9_-]/g, '_');

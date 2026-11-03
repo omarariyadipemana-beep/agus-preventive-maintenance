@@ -1638,10 +1638,10 @@ a:hover { text-decoration: underline; }
   text-align: left;
 }
 
-.print-table .th-no { width: 44px; text-align: center; }
-.print-table .th-img { width: 75px; text-align: center; }
-.print-table .th-status { width: 150px; text-align: center; }
-.print-table .th-remarks { width: 180px; }
+.print-table .th-no { width: 38px; text-align: center; }
+.print-table .th-img { width: 84px; text-align: center; }
+.print-table .th-status { width: 140px; text-align: center; }
+.print-table .th-remarks { width: 170px; }
 
 .print-table td {
   padding: var(--space-3) var(--space-4);
@@ -1653,16 +1653,16 @@ a:hover { text-decoration: underline; }
 .print-table td.td-img {
   text-align: center;
   padding: 4px;
-  width: 75px;
+  width: 84px;
 }
 
 .print-thumb-wrap {
-  width: 64px;
-  height: 38px;
+  width: 72px;
+  height: 42px;
   border-radius: 4px;
   overflow: hidden;
   border: 1px solid #cbd5e1;
-  background: #ffffff;
+  background: #f8fafc;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1672,8 +1672,8 @@ a:hover { text-decoration: underline; }
 }
 
 .print-thumb-img {
-  max-width: 62px;
-  max-height: 36px;
+  max-width: 70px;
+  max-height: 40px;
   width: auto;
   height: auto;
   object-fit: contain;
