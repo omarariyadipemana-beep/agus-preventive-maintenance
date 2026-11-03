@@ -551,3 +551,11 @@ Pengguna mengunggah 3 berkas PDF panduan inspeksi komponen mesin tambahan:
 - [x] Modernisasi `server.js` (graceful shutdown, configurable port, DB path & CORS).
 - [x] Pembuatan dokumentasi komprehensif `PANDUAN_UBUNTU_DOCKER.md`.
 - [x] Validasi sintaks YAML `docker-compose.yml` dan sintaks Node.js `server.js`.
+
+### 4. Hasil Deployment VPS Ubuntu 26.04 LTS (Live & Terverifikasi):
+- **Spesifikasi Server:** Ubuntu 26.04.1 LTS (Resolute Raccoon), Docker Engine 29.1.3, Docker Compose 2.40.3, RAM 1GB + 2GB Swap.
+- **Root Cause & Fix Kompatibilitas SQLite:** Paket `better-sqlite3@13.0.3` mensyaratkan `node: >=22`. Penggunaan awal Node 20 memicu ketidakcocokan ABI C++ (Exit code 139 / Segmentation Fault). Solusi: Base image ditingkatkan ke `node:22-bookworm-slim`, berhasil 100% tanpa error kompilasi.
+- **Healthcheck Container:** Endpoint publik `/api/health` ditambahkan ke `server.js` dan dikonfigurasi pada Dockerfile & Compose sehingga container terverifikasi `healthy` secara otomatis.
+- **Akses Publik Internet:** Karena VPS berada di balik NAT IP lokal `10.10.0.106`, terowongan Cloudflare Tunnel diaktifkan dengan mode restart `unless-stopped`.
+- **Live URL:** `https://patches-ada-discrimination-winning.trycloudflare.com` (Dapat diakses langsung dari HP/Laptop di seluruh dunia).
+- **Status Akhir:** SELESAI, STABIL & LIVE.
