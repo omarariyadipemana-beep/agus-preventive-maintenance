@@ -307,3 +307,9 @@
     - Teks deskripsi pekerjaan berada mandiri di bawah foto tanpa saling menumpuk/tumpang tindih (anti-overlap).
     - Menghilangkan simbol dash liar (`-`) pada item tanpa catatan, dan menampilkan kotak catatan berbingkai khusus warna perhatian untuk temuan NOT OKE.
   * Pembaruan query cache-buster ke `?v=20261103_v260` dan footer dokumen resmi ke `QMS-0039442 v2.6.0`.
+
+- v2.7.0: Kontainerisasi Docker Compose & Kesiapan Hosting Mandiri Ubuntu 26.04 LTS:
+  * Menyediakan `Dockerfile` multi-stage build berbasis Node.js 20 Bookworm LTS dengan kompilasi otomatis modul native `better-sqlite3` dan user non-root `node`.
+  * Menyediakan `docker-compose.yml` standar produksi dengan volume persisten `./data:/app/data`, healthcheck otomatis, dan rotasi log.
+  * Memodernisasi `server.js` dengan dukungan konfigurasi port dinamis (`process.env.PORT`), path database (`process.env.DB_PATH`), dan handler Graceful Shutdown (`SIGTERM`/`SIGINT`) untuk keamanan data SQLite.
+  * Menyediakan template `.env.docker.example` dan panduan lengkap deploy di server Ubuntu `PANDUAN_UBUNTU_DOCKER.md`.

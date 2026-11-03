@@ -1,0 +1,37 @@
+# ==============================================================
+# DOCKER COMPOSE: Preventive Maintenance System
+# Siap Dijalankan di Ubuntu 26.04 LTS (Docker Engine & Compose v2)
+# ==============================================================
+
+services:
+  pm-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: agus-pm-system:v2.6.0
+    container_name: agus_pm_app
+    restart: unless-stopped
+    ports:
+      # Format: "PORT_HOST:PORT_CONTAINER"
+      # Ubah APP_PORT di file .env jika port 3001 di server Ubuntu sudah terpakai
+      - "${APP_PORT:-3001}:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DB_PATH=/app/data/database.sqlite
+      - AUTH_SECRET=${AUTH_SECRET:-agus-pm-token-secret-salt-2026}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+    volumes:
+      # Data database SQLite disimpan di folder ./data pada host Ubuntu (Aman & Tidak Terhapus saat container restart/rebuild)
+      - ./data:/app/data
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/machine-types', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

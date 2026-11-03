@@ -511,3 +511,43 @@ Pengguna mengunggah 3 berkas PDF panduan inspeksi komponen mesin tambahan:
 - [x] Redesain kartu laporan detail di ponsel (`.print-table tbody tr`) menggunakan CSS Grid anti tumpang-tindih, menghilangkan dash kosong, dan menata badge status serta catatan perbaikan NOT OKE secara elegan dan jos jis.
 - [x] Verifikasi rendering antarmuka via Headless Chrome untuk desktop (1280px) dan mobile (375px).
 - [x] Peningkatan versi dokumen resmi dan cache buster ke `QMS-0039442 v2.6.0`.
+
+
+# v2.7.0 (SELESAI DITERAPKAN: 4 Nov 2026)
+## Migrasi & Kontainerisasi Docker Compose untuk Ubuntu 26.04 LTS
+
+### 1. Latar Belakang & Analisis Kebutuhan Pengguna
+- Pengguna meminta agar seluruh layanan Preventive Maintenance System (QMS-0039442) dapat dipindahkan dan di-hosting secara mandiri di server **Ubuntu 26.04 LTS** menggunakan **Docker Compose** (`docker-compose.yml`).
+- Permintaan ini memungkinkan perusahaan menjalankan aplikasi secara self-hosted (on-premise pabrik / private cloud VPS) tanpa ketergantungan pihak ketiga, dengan persistensi data yang aman dan backup yang mudah.
+
+### 2. Rekayasa Arsitektur & Berkas yang Dibuat
+1. **`Dockerfile` (Multi-stage Production Image):**
+   - Base image: `node:20-bookworm-slim` (LTS stabil untuk Linux x86_64 & ARM64).
+   - Stage 1 (Builder): Mengompilasi dependensi C++ native `better-sqlite3` menggunakan toolchain resmi (`python3`, `make`, `g++`).
+   - Stage 2 (Runner): Image bersih tanpa compiler berlebih, menjalankan aplikasi dengan user non-root (`USER node`), terintegrasi dengan `HEALTHCHECK` otomatis setiap 30 detik.
+2. **`docker-compose.yml`:**
+   - Service: `pm-app` dengan container name `agus_pm_app`.
+   - Port mapping: `${APP_PORT:-3001}:3001` (dapat dikustomisasi via `.env`).
+   - Volume persistence: `./data:/app/data` (database SQLite tersimpan langsung di host Ubuntu, aman dari container restart/rebuild).
+   - Logging driver: `json-file` dengan rotasi log otomatis (`max-size: 10m`, `max-file: 3`) agar tidak memenuhi disk server Ubuntu.
+   - Restart policy: `unless-stopped`.
+3. **`.dockerignore`:**
+   - Memfilter `node_modules`, `.git`, file database lokal Windows, file log, dan file panduan agar ukuran build context Docker tetap ramping dan cepat.
+4. **`.env.docker.example`:**
+   - Template konfigurasi port `APP_PORT=3001`, `AUTH_SECRET`, dan `ALLOWED_ORIGINS=*`.
+5. **Modernisasi `server.js` untuk Standar Container:**
+   - Dukungan variabel lingkungan `PORT` (`process.env.PORT || 3001`).
+   - Dukungan variabel lingkungan `DB_PATH` (`process.env.DB_PATH || path.join(__dirname, 'database.sqlite')`) dengan auto-creation direktori penyimpanan `/app/data`.
+   - Dukungan `ALLOWED_ORIGINS` untuk fleksibilitas CORS di LAN pabrik.
+   - Penambahan handler **Graceful Shutdown** (`SIGTERM` & `SIGINT`) untuk menutup koneksi server HTTP dan database SQLite secara bersih tanpa risiko korupsi file WAL saat container di-stop.
+6. **`PANDUAN_UBUNTU_DOCKER.md`:**
+   - Panduan instalasi Docker di Ubuntu 26.04 LTS, cara clone/transfer repo, menjalankan compose, akses URL & PIN, backup otomatis database via Cron, serta opsi reverse proxy Nginx + SSL HTTPS Let's Encrypt.
+
+### 3. Status Eksekusi:
+- [x] Analisis kebutuhan migrasi Ubuntu 26.04 LTS.
+- [x] Pembuatan `Dockerfile` multi-stage build Node.js 20 LTS + Better-SQLite3.
+- [x] Pembuatan `docker-compose.yml` dengan volume mounting persisten `./data`.
+- [x] Pembuatan `.dockerignore` dan `.env.docker.example`.
+- [x] Modernisasi `server.js` (graceful shutdown, configurable port, DB path & CORS).
+- [x] Pembuatan dokumentasi komprehensif `PANDUAN_UBUNTU_DOCKER.md`.
+- [x] Validasi sintaks YAML `docker-compose.yml` dan sintaks Node.js `server.js`.

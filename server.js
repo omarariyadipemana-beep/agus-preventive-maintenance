@@ -4,8 +4,9 @@ const crypto = require('crypto');
 const ExcelJS = require('exceljs');
 const rateLimit = require('express-rate-limit');
 
+const fs = require('fs');
 const app = express();
-const PORT = 3001;
+const PORT = parseInt(process.env.PORT, 10) || 3001;
 
 // ============================================================
 // SECURITY: PIN & SESSION MANAGEMENT (SERVER-SIDE)
@@ -98,11 +99,16 @@ const apiLimiter = rateLimit({
 // ============================================================
 app.use(express.json());
 
-// CORS: hanya izinkan domain resmi
+// CORS: izinkan domain terdaftar atau konfigurasi environment
 app.use((req, res, next) => {
-  const allowedOrigins = ['https://formmaintenance.vercel.app', 'http://localhost:3001'];
+  const allowedOriginsEnv = process.env.ALLOWED_ORIGINS;
+  const allowedOrigins = allowedOriginsEnv
+    ? allowedOriginsEnv.split(',').map(s => s.trim())
+    : ['https://formmaintenance.vercel.app', 'http://localhost:3001', 'http://localhost:3000'];
   const origin = req.headers.origin;
-  if (origin && allowedOrigins.includes(origin)) {
+  if (allowedOrigins.includes('*')) {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  } else if (origin && allowedOrigins.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
@@ -116,14 +122,19 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 let Database = null;
 let db = null;
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'database.sqlite');
 try {
+  const dbDir = path.dirname(DB_PATH);
+  if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
   Database = require('better-sqlite3');
-  db = new Database(path.join(__dirname, 'database.sqlite'));
+  db = new Database(DB_PATH);
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
 } catch (e) {
   // Running in cloud serverless environment where SQLite binary is absent
-  console.log('SQLite not available in this environment (likely Vercel Serverless).');
+  console.log('SQLite not available in this environment (likely Vercel Serverless):', e && e.message);
 }
 
 // ============================================================
@@ -623,7 +634,7 @@ app.get('/api/inspections/:id/excel', authMiddleware, async (req, res) => {
 // ============================================================
 // START SERVER
 // ============================================================
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   const os = require('os');
   const interfaces = os.networkInterfaces();
   let lanIP = 'localhost';
@@ -641,3 +652,25 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`  LAN:     http://${lanIP}:${PORT}`);
   console.log(`=============================================\n`);
 });
+
+// ============================================================
+// GRACEFUL SHUTDOWN (DOCKER & PROCESS SIGNALS)
+// ============================================================
+function gracefulShutdown(signal) {
+  console.log(`\n[${signal}] Menutup server Express dan database SQLite secara aman...`);
+  server.close(() => {
+    if (db) {
+      try {
+        db.close();
+        console.log('[SQLite] Koneksi database ditutup bersih.');
+      } catch (err) {
+        console.error('[SQLite] Error saat menutup database:', err);
+      }
+    }
+    console.log('[App] Proses aplikasi berhenti dengan sukses.');
+    process.exit(0);
+  });
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
