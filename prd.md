@@ -288,3 +288,10 @@
   * Mengganti pustaka pihak ketiga `html2canvas` dengan mesin grafis native HTML5 2D Context API (`generateInspectionReportCanvas`), melukis tabel laporan dan menaruh foto komponen GTP-GIGA secara presisi (`ctx.drawImage`) dengan resolusi 2x Retina (1760 × 2584 px).
   * Menghilangkan 100% kegagalan render gambar, async decode race conditions, dan memori leak pada browser ponsel.
   * Menyediakan modal pratinjau instan di mana pengguna di HP dapat langsung melihat hasil gambar dan menyimpannya lewat tombol unduh maupun fitur *long-press* simpan/bagikan ke WhatsApp.
+- v2.5.0: Integrasi Foto Panduan Visual SOP & Komponen Mesin Heater DC, AIPS, dan PC / PCA:
+  * Menambahkan total 31 foto komponen mesin baru (Heater DC: 7 foto, AIPS: 13 foto, PC/PCA: 11 foto) melengkapi GTP-GIGA (19 foto) sehingga seluruh 4 tipe mesin kini memiliki 100% foto panduan visual (total 50 foto).
+  * Mengintegrasikan pustaka Base64 instan multi-mesin `public/machine-task-images.js` (`window.MACHINE_TASK_IMAGES`), kebal CORS, tanpa latensi jaringan, dan offline-ready.
+  * Mengaktifkan kolom GAMBAR dan modal Lightbox perbesar foto (click-to-zoom) pada form pengisian checklist untuk semua 4 tipe mesin.
+  * Mengaktifkan thumbnail kanvas foto komponen pada tabel detail riwayat laporan inspeksi untuk semua tipe mesin.
+  * Memutakhirkan mesin pelukis native HTML5 2D Canvas (`generateInspectionReportCanvas`) untuk melukis foto komponen Heater DC, AIPS, PC/PCA, maupun GTP-GIGA langsung ke dokumen ekspor JPG resolusi Retina 2x (1760 px).
+  * Pembaruan query cache-buster ke `?v=20261103_v250` dan footer dokumen resmi ke `QMS-0039442 v2.5.0`.

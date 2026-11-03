@@ -376,3 +376,74 @@ Pengguna menyetujui penerapan **OPSI 1**: membuang pustaka `html2canvas` sepenuh
 - [x] Prototipe Canvas Native teruji sukses (1760×2584 px, 19 foto komponen terlukis tajam).
 - [x] Implementasi mesin canvas native & modal pratinjau di kode sumber aplikasi.
 - [x] Verifikasi lokal & deployment produksi Vercel (`v2.4.0`). (STATUS: SELESAI DITERAPKAN)
+
+
+---
+
+# Revisi v2.5.0: Integrasi Foto Panduan Visual SOP & Komponen Mesin Heater DC, AIPS, dan PC / PCA (SELESAI DITERAPKAN)
+## Integrasi Foto Panduan Visual SOP & Komponen Mesin Heater DC, AIPS, dan PC / PCA (Checklist, Lightbox Zoom, & Export JPG Canvas)
+
+### 1. Analisis Dokumen & Pemetaan Foto Masukan Pengguna
+Pengguna mengunggah 3 berkas PDF panduan inspeksi komponen mesin tambahan:
+1. **Berkas PDF 1 (`media_1793688361302_2bd3c086.pdf`):**
+   - Berisi 13 nomor baris inspeksi.
+   - Sesuai dengan spesifikasi mesin **AIPS (Auto Insert Push Shelder)** pada database (13 task items).
+   - Seluruh 13 foto komponen berhasil diidentifikasi. Item #7 yang aslinya terbagi menjadi dua sub-gambar berdampingan telah digabungkan secara presisi (*stitched horizontally*) menjadi satu kesatuan gambar proporsional.
+2. **Berkas PDF 2 (`media_1793688361302_808c5c17.pdf`):**
+   - Berisi 7 nomor baris inspeksi.
+   - Sesuai dengan spesifikasi mesin **Heater DC** pada database (7 task items).
+   - Seluruh 7 foto komponen berhasil diekstraksi secara jernih dan proporsional.
+3. **Berkas PDF 3 (`media_1793688361331_ba49b9de.pdf`):**
+   - Berisi 11 nomor baris inspeksi.
+   - Sesuai dengan spesifikasi mesin **PC / PCA** pada database (11 task items).
+   - Seluruh 11 foto komponen berhasil diekstraksi lengkap 1-to-1.
+
+### 2. Rencana Implementasi & Rekayasa Arsitektur
+1. **Penyimpanan Berkas Gambar Komponen Fisik (`public/images/tasks/`):**
+   - Menyimpan seluruh foto yang telah diekstraksi ke direktori terstruktur:
+     * `public/images/tasks/heater-dc/1.jpg` s/d `7.jpg` (7 foto)
+     * `public/images/tasks/aips/1.jpg` s/d `13.jpg` (13 foto)
+     * `public/images/tasks/pc-pca/1.jpg` s/d `11.jpg` (11 foto)
+     *(melengkapi `public/images/tasks/gtp-giga/1.jpg` s/d `19.jpg` yang sudah ada)*.
+2. **Pustaka Multi-Mesin Base64 Data URL Instan (`public/machine-task-images.js`):**
+   - Menggabungkan data URL Base64 untuk seluruh 4 tipe mesin ke dalam variabel global:
+     `window.MACHINE_TASK_IMAGES = { 'gtp-giga': {...}, 'heater-dc': {...}, 'aips': {...}, 'pc-pca': {...} }`
+   - Total ukuran data sangat efisien, 100% offline-ready, kebal masalah CORS, dan tidak memerlukan request jaringan berulang.
+3. **Generalisasi Helper Pemetaan Gambar Mesin di `public/app.js`:**
+   - Membuat fungsi normalisasi mesin `getMachineTaskFolder(machineType)` yang toleran terhadap variasi penamaan (`PC / PCA`, `PCA`, `PC/PCA`, `Heater DC`, `AIPS`, `GTP-GIGA`).
+   - Membuat helper `getTaskImageSrc(machineType, itemNo)` yang mengambil gambar langsung dari Base64 local map dengan fallback URL folder statis.
+4. **Pembaruan Tampilan Form Checklist Inspeksi (`renderTaskList`):**
+   - Mengaktifkan kolom GAMBAR dan banner foto komponen untuk **semua 4 tipe mesin** (tidak hanya GTP-GIGA).
+   - Mengaktifkan modal pembesaran Lightbox interaktif (`openTaskImageModal`) untuk semua mesin, sehingga teknisi di lapangan dapat memperbesar foto komponen mesin apapun saat bertugas.
+5. **Pembaruan Tampilan Detail Laporan (`renderDetail`):**
+   - Mengaktifkan thumbnail kanvas foto komponen untuk semua 4 tipe mesin pada tabel pratinjau hasil inspeksi.
+6. **Pembaruan Mesin Pelukis Native Canvas (`generateInspectionReportCanvas`):**
+   - Menghapus pengecekan kaku `isGtpGiga` dan menggantikannya dengan pengecekan apakah tipe mesin memiliki data foto komponen (`getMachineTaskFolder(machineType)`).
+   - Preload foto otomatis sesuai mesin yang sedang diekspor.
+   - Melukis foto komponen mesin GTP-GIGA, Heater DC, AIPS, maupun PC/PCA secara presisi (`ctx.drawImage`) ke kolom `Gambar` pada dokumen resmi 1760×2584 px.
+7. **Pembaruan `public/index.html`:**
+   - Memasukkan skrip `machine-task-images.js` menggantikan `gtp-giga-images.js`.
+   - Mengupdate query string cache-buster ke `?v=20261103_v250`.
+   - Mengupdate label footer antarmuka ke `QMS-0039442 v2.5.0`.
+
+### 3. Berkas yang Diubah / Dibuat:
+1. `public/images/tasks/heater-dc/` : 7 berkas foto komponen Heater DC.
+2. `public/images/tasks/aips/` : 13 berkas foto komponen AIPS.
+3. `public/images/tasks/pc-pca/` : 11 berkas foto komponen PC / PCA.
+4. `public/machine-task-images.js` : Pustaka data URL Base64 instan 4 tipe mesin.
+5. `public/index.html` : Impor pustaka data URL baru, query cache buster `v250`, dan label footer `v2.5.0`.
+6. `public/app.js` : Generalisasi pemetaan foto multi-mesin di checklist, detail, dan engine Canvas native export JPG.
+
+### 4. Status Eksekusi:
+- [x] Ekstraksi dan verifikasi 31 foto komponen mesin dari 3 berkas PDF masukan pengguna (Heater DC: 7, AIPS: 13, PC/PCA: 11).
+- [x] Penyusunan DRAFT Rencana Revisi di `revisi.md` dan telah disetujui pengguna ("OKE TERAPKAN").
+- [x] Penyalinan berkas gambar ke direktori `public/images/tasks/` masing-masing mesin.
+- [x] Pembuatan modul data URL Base64 `public/machine-task-images.js` (50 foto komponen seluruh 4 tipe mesin).
+- [x] Integrasi visual multi-mesin di `public/app.js` (checklist, detail, dan export JPG).
+- [x] Pembaruan skrip & cache-buster di `public/index.html` (v2.5.0).
+- [x] Verifikasi end-to-end headless Chrome berhasil penuh:
+  * Heater DC (7 items)   -> Res: 1760x1384 px | JPEG: 328 KB | Photo Colors: 1396
+  * AIPS (13 items)        -> Res: 1760x1984 px | JPEG: 468 KB | Photo Colors: 1400
+  * PC / PCA (11 items)    -> Res: 1760x1784 px | JPEG: 427 KB | Photo Colors: 1458
+  * GTP-GIGA (19 items)    -> Res: 1760x2584 px | JPEG: 635 KB | Photo Colors: 1532
+- [x] Siap deployment ke Vercel Production. (STATUS: SELESAI DITERAPKAN)

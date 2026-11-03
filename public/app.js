@@ -358,10 +358,35 @@
     } catch(e) { console.error(e); }
   });
 
+  // Helper to normalize machine type to task folder slug
+  function getMachineTaskFolder(machineType) {
+    const norm = (machineType || '').trim().toUpperCase();
+    if (norm === 'GTP-GIGA') return 'gtp-giga';
+    if (norm === 'AIPS') return 'aips';
+    if (norm.includes('HEATER')) return 'heater-dc';
+    if (norm.includes('PCA') || norm.includes('PC')) return 'pc-pca';
+    return null;
+  }
+
+  // Helper to get Base64 data URL or fallback path for task images
+  function getTaskImageSrc(machineType, itemNo) {
+    const folder = getMachineTaskFolder(machineType);
+    if (!folder) return null;
+    if (typeof window !== 'undefined' && window.MACHINE_TASK_IMAGES && window.MACHINE_TASK_IMAGES[folder] && window.MACHINE_TASK_IMAGES[folder][itemNo]) {
+      return window.MACHINE_TASK_IMAGES[folder][itemNo];
+    }
+    // Backward compatibility for GTP-GIGA
+    if (folder === 'gtp-giga' && typeof window !== 'undefined' && window.GTP_GIGA_DATA_URLS && window.GTP_GIGA_DATA_URLS[itemNo]) {
+      return window.GTP_GIGA_DATA_URLS[itemNo];
+    }
+    return `/images/tasks/${folder}/${itemNo}.jpg`;
+  }
+
   function renderTaskList(tasks) {
     const tbody = $('#taskTableBody');
     const machineType = ($('#machineType').value || '').trim();
-    const isGtpGiga = machineType === 'GTP-GIGA';
+    const folder = getMachineTaskFolder(machineType);
+    const hasImages = !!folder;
 
     tbody.innerHTML = tasks.map(task => {
       // Split task description by ":"
@@ -370,8 +395,8 @@
       const detail = parts.slice(1).join(':').trim();
 
       let imgHtml = '';
-      if (isGtpGiga) {
-        const imgSrc = `/images/tasks/gtp-giga/${task.item_no}.jpg`;
+      if (hasImages) {
+        const imgSrc = getTaskImageSrc(machineType, task.item_no);
         const titleAttr = esc(`Item #${task.item_no} : ${category}`);
         const descAttr = esc(task.task_description);
         imgHtml = `
@@ -706,14 +731,6 @@
   }
 
   
-  // Helper to get Base64 data URL or fallback path for task images
-  function getTaskImageSrc(itemNo) {
-    if (typeof window !== 'undefined' && window.GTP_GIGA_DATA_URLS && window.GTP_GIGA_DATA_URLS[itemNo]) {
-      return window.GTP_GIGA_DATA_URLS[itemNo];
-    }
-    return `/images/tasks/gtp-giga/${itemNo}.jpg`;
-  }
-
   function renderDetail(data) {
     $('#detailTitle').textContent = 'Detail Inspeksi';
     $('#detailSubtitle').textContent = data.form_id + ' — ' + data.machine_type;
@@ -728,13 +745,15 @@
 
     // Task table
     const tbody = $('#printTableBody');
-    const isGtpGiga = (data.machine_type || '').trim() === 'GTP-GIGA';
+    const machineType = (data.machine_type || '').trim();
+    const folder = getMachineTaskFolder(machineType);
+    const hasImages = !!folder;
 
     tbody.innerHTML = data.items.map(item => {
       const statusClass = item.status === 'OK' ? 's-ok' : (item.status === 'NOT OKE' ? 's-nok' : '');
       let imgHtml = '';
-      if (isGtpGiga) {
-        const imgSrc = getTaskImageSrc(item.item_no);
+      if (hasImages) {
+        const imgSrc = getTaskImageSrc(machineType, item.item_no);
         const titleAttr = esc(`Item #${item.item_no} : ${item.task_description}`);
         imgHtml = `
           <div class="print-thumb-wrap" onclick="openTaskImageModal('${imgSrc}', '${titleAttr}', '${esc(item.task_description)}')" title="Klik untuk memperbesar">
@@ -757,11 +776,11 @@
     }).join('');
 
     // Draw photos onto thumbnail canvases directly
-    if (isGtpGiga) {
+    if (hasImages) {
       const canvases = tbody.querySelectorAll('.print-thumb-canvas');
       canvases.forEach(cvs => {
         const itemNo = cvs.dataset.itemNo;
-        const src = getTaskImageSrc(itemNo);
+        const src = getTaskImageSrc(machineType, itemNo);
         if (!src) return;
         const ctx = cvs.getContext('2d');
         const img = new Image();
@@ -824,22 +843,33 @@
   $('#btnReportPreviewClose')?.addEventListener('click', closeReportPreviewModal);
   $('#btnReportPreviewDismiss')?.addEventListener('click', closeReportPreviewModal);
 
+  window.getMachineTaskFolder = getMachineTaskFolder;
+  window.getTaskImageSrc = getTaskImageSrc;
+  window.generateInspectionReportCanvas = generateInspectionReportCanvas;
+
   async function generateInspectionReportCanvas(data) {
     if (!data || !data.items) {
       throw new Error('Data inspeksi tidak valid');
     }
 
-    const isGtpGiga = (data.machine_type || '').trim() === 'GTP-GIGA';
+    const machineType = (data.machine_type || '').trim();
+    const folder = getMachineTaskFolder(machineType);
+    const hasImages = !!folder;
 
     // 1. Preload all task images
     const imgMap = new Map();
-    if (isGtpGiga) {
+    if (hasImages) {
       await Promise.all(data.items.map(item => {
         return new Promise(resolve => {
+          const src = getTaskImageSrc(machineType, item.item_no);
+          if (!src) {
+            imgMap.set(item.item_no, null);
+            return resolve();
+          }
           const img = new Image();
           img.onload = () => { imgMap.set(item.item_no, img); resolve(); };
           img.onerror = () => { imgMap.set(item.item_no, null); resolve(); };
-          img.src = getTaskImageSrc(item.item_no);
+          img.src = src;
         });
       }));
     }
