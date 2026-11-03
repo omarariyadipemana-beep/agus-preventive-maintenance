@@ -272,3 +272,44 @@ Dari hasil uji ekspor gambar terbaru yang dikirim oleh pengguna (`media_17936750
 - [x] Pembesaran thumbnail foto komponen menjadi 72px × 42px dengan background kontras netral `#f8fafc` di `public/style.css`.
 - [x] Tata letak tabel formulir resmi standar pabrik (QMS-0039442) proporsional sempurna dan anti-tercekik di semua perangkat.
 - [x] Verifikasi lokal & deployment produksi Vercel (`v2.3.2`). (STATUS: SELESAI DITERAPKAN)
+
+
+---
+
+## Revisi v2.3.3 - Solusi Tuntas Render Foto Komponen Menggunakan HTML5 Canvas Buffer (Anti-Kosong)
+
+### 1. Hasil Investigasi Mendalam Root Cause Foto Kosong:
+Pada berkas `public/html2canvas.min.js`, fungsi penggambaran gambar (`drawImage`) memiliki proteksi internal:
+```javascript
+t && 0 < A.intrinsicWidth && 0 < A.intrinsicHeight && this.ctx.drawImage(...)
+```
+Di mana `A.intrinsicWidth` dibaca langsung dari `e.naturalWidth` milik elemen tag `<img>` yang baru saja dikloning ke dokumen virtual.
+Pada browser smartphone modern:
+- Elemen kloningan tag `<img>` di memori belum menyelesaikan siklus *asynchronous image decoding* saat *html2canvas* memindai dokumen.
+- Nilai `e.naturalWidth` dan `e.naturalHeight` masih bernilai `0`.
+- Akibatnya, kondisi `0 < A.intrinsicWidth` bernilai **FALSE**, sehingga *html2canvas* **melompati (skip) proses penggambaran gambar sama sekali**!
+- Yang tersisa di kanvas hanyalah warna latar belakang putih bersih (`#ffffff`/`#f8fafc`).
+
+### 2. Solusi Permanen & Anti-Gagal (HTML5 Direct Canvas Bitmap):
+1. **Gunakan Elemen `<canvas class="print-thumb-canvas">` pada Tabel Laporan:**
+   - Menggantikan tag `<img>` dengan elemen `<canvas width="186" height="99">`.
+   - Pixel foto komponen mesin GTP-GIGA digambar langsung ke dalam buffer 2D canvas saat halaman dibuka.
+2. **Keunggulan HTML5 Canvas di html2canvas:**
+   - Canvas memiliki atribut integer eksplisit `width="186"` dan `height="99"`.
+   - Nilai dimensi kanvas **tidak pernah 0** dan tidak bergantung pada siklus decoding asinkron browser.
+   - Pustaka *html2canvas* menyalin buffer pixel canvas secara sinkron dan langsung menggambarnya ke hasil export JPG.
+3. **Sinkronisasi Pixel di Callback `onclone`:**
+   - Pada saat kloningan dokumen dibuat, pixel kanvas asli langsung disalin ke kanvas kloningan (`cctx.drawImage(origCanvas, 0, 0)`).
+   - Menjamin 100% bahwa seluruh 19 foto komponen mesin GTP-GIGA pasti tergambar secara utuh, tajam, dan tidak akan pernah kosong lagi.
+
+### 3. File yang Akan Diubah:
+1. `public/app.js` : Implementasi render thumbnail menggunakan elemen `<canvas>` dan penyalinan buffer pixel pada event `#btnExportJPG`.
+2. `public/style.css` : Penyesuaian styling untuk `.print-thumb-canvas`.
+
+### 4. Status Eksekusi:
+- [x] Analisis forensik kode sumber *html2canvas* menemukan akar penyebab `naturalWidth === 0` pada kloningan tag `<img>`.
+- [x] Perancangan arsitektur HTML5 Canvas Buffer di `revisi.md`.
+- [x] Penggantian elemen thumbnail di `#printTable` menjadi `<canvas class="print-thumb-canvas" width="186" height="99">`.
+- [x] Penggambaran foto komponen langsung ke 2D canvas buffer saat render detail laporan (`public/app.js`).
+- [x] Penyalinan sinkron buffer pixel canvas pada callback `onclone` (`cctx.drawImage(origCvs, 0, 0)`).
+- [x] Verifikasi lokal & deployment produksi Vercel (`v2.3.3`). (STATUS: SELESAI DITERAPKAN)

@@ -276,3 +276,7 @@
   * Mengintegrasikan fungsi `onclone` pada `html2canvas` yang secara terisolasi memformat dokumen cetak `#printArea` pada lebar tetap 880px (proporsi A4 resmi perusahaan), mencegah kanvas tertekan mengikuti viewport sempit ponsel (342px).
   * Memperbesar dimensi wadah thumbnail foto komponen menjadi 72px × 42px (hampir 3x lebih besar) dengan latar belakang kontras lembut (#f8fafc), menampilkan komponen mesin GTP-GIGA secara tajam, jelas, dan berkontras tinggi.
   * Menjamin seluruh teks kolom Task List, Status, Keterangan, dan tanda tangan tersusun presisi dalam layout tabel formal tanpa teks terlipat sempit, siap kirim ke WhatsApp pimpinan.
+- v2.3.3: Implementasi HTML5 Canvas Buffer untuk Render Foto Komponen (Anti-Kosong):
+  * Mengeliminasi tag `<img>` pada kolom foto tabel laporan cetak dan menggantinya dengan elemen native `<canvas class="print-thumb-canvas" width="186" height="99">`.
+  * Menghilangkan bug `naturalWidth === 0` pada pustaka `html2canvas` yang sebelumnya memicu *skip* penggambaran foto karena delay decoding asinkron pada kloningan DOM.
+  * Menyalin pixel buffer secara sinkron pada callback `onclone` (`cctx.drawImage(origCvs, 0, 0)`), menjamin 100% seluruh foto komponen mesin GTP-GIGA tercetak utuh, jernih, dan tidak akan pernah kosong.

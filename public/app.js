@@ -737,7 +737,7 @@
         const titleAttr = esc(`Item #${item.item_no} : ${item.task_description}`);
         imgHtml = `
           <div class="print-thumb-wrap" onclick="openTaskImageModal('${imgSrc}', '${titleAttr}', '${esc(item.task_description)}')" title="Klik untuk memperbesar">
-            <img src="${imgSrc}" alt="Item ${item.item_no}" class="print-thumb-img">
+            <canvas class="print-thumb-canvas" width="186" height="99" data-item-no="${item.item_no}"></canvas>
           </div>
         `;
       } else {
@@ -754,6 +754,22 @@
         </tr>
       `;
     }).join('');
+
+    // Draw photos onto thumbnail canvases directly
+    if (isGtpGiga) {
+      const canvases = tbody.querySelectorAll('.print-thumb-canvas');
+      canvases.forEach(cvs => {
+        const itemNo = cvs.dataset.itemNo;
+        const src = getTaskImageSrc(itemNo);
+        if (!src) return;
+        const ctx = cvs.getContext('2d');
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0, cvs.width, cvs.height);
+        };
+        img.src = src;
+      });
+    }
 
     // Verification
     $('#printVerification').innerHTML = 'Hasil Verifikasi : <strong>' + esc(data.verification_result) + '</strong> (dilakukan oleh Group Leader / LPU, coret yang tidak perlu)';
@@ -778,13 +794,21 @@
           throw new Error('Pustaka html2canvas belum termuat.');
         }
 
-        // Wait for all images inside printArea to load
-        const images = area.querySelectorAll('img');
-        await Promise.all([...images].map(img => {
-          if (img.complete) return Promise.resolve();
+        // Ensure all thumbnail canvases have their photos drawn
+        const canvases = area.querySelectorAll('.print-thumb-canvas');
+        await Promise.all([...canvases].map(cvs => {
           return new Promise(resolve => {
-            img.onload = resolve;
+            const itemNo = cvs.dataset.itemNo;
+            const src = getTaskImageSrc(itemNo);
+            if (!src) return resolve();
+            const ctx = cvs.getContext('2d');
+            const img = new Image();
+            img.onload = () => {
+              ctx.drawImage(img, 0, 0, cvs.width, cvs.height);
+              resolve();
+            };
             img.onerror = resolve;
+            img.src = src;
           });
         }));
 
@@ -798,6 +822,24 @@
           onclone: (clonedDoc) => {
             const clonedArea = clonedDoc.getElementById('printArea');
             if (!clonedArea) return;
+
+            // Copy pixel buffers from original canvases to cloned canvases
+            const clonedCanvases = clonedArea.querySelectorAll('.print-thumb-canvas');
+            clonedCanvases.forEach(clonedCvs => {
+              const itemNo = clonedCvs.dataset.itemNo;
+              const origCvs = area.querySelector(`.print-thumb-canvas[data-item-no="${itemNo}"]`);
+              if (origCvs) {
+                clonedCvs.width = origCvs.width;
+                clonedCvs.height = origCvs.height;
+                const cctx = clonedCvs.getContext('2d');
+                if (cctx) cctx.drawImage(origCvs, 0, 0);
+              }
+              clonedCvs.style.width = '70px';
+              clonedCvs.style.height = '40px';
+              clonedCvs.style.display = 'block';
+              clonedCvs.style.margin = 'auto';
+              clonedCvs.style.borderRadius = '3px';
+            });
 
             // 1. Force standard 880px document width with clean white background
             clonedArea.style.width = '880px';

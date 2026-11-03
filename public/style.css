@@ -1681,6 +1681,14 @@ a:hover { text-decoration: underline; }
   margin: auto;
 }
 
+.print-thumb-canvas {
+  width: 70px;
+  height: 40px;
+  display: block;
+  margin: auto;
+  border-radius: 3px;
+}
+
 .print-no-img {
   color: #94a3b8;
   font-weight: 700;
