@@ -407,10 +407,10 @@ app.get('/api/dashboard', authMiddleware, adminOnly, async (req, res) => {
       .order('created_at', { ascending: false })
       .limit(5);
 
-    // 5. Item counts this month
+    // 5. Item counts this month & by-machine breakdown
     const { data: monthInspections } = await supabase
       .from('inspections')
-      .select('id')
+      .select('id, machine_type, verification_result')
       .gte('inspection_date', startOfMonth)
       .lte('inspection_date', endOfMonth);
 
@@ -419,7 +419,33 @@ app.get('/api/dashboard', authMiddleware, adminOnly, async (req, res) => {
     let totalItems = 0;
     const nokItems = [];
 
+    const KNOWN_MACHINES = ['GTP-GIGA', 'AIPS', 'Heater DC', 'PC / PCA'];
+    const byMachine = {};
+    KNOWN_MACHINES.forEach(m => {
+      byMachine[m] = {
+        totalInspections: 0,
+        verificationOK: 0,
+        verificationNOK: 0,
+        itemOK: 0,
+        itemNOK: 0,
+        totalItems: 0,
+        nokItems: []
+      };
+    });
+
     if (monthInspections && monthInspections.length > 0) {
+      monthInspections.forEach(insp => {
+        const m = (insp.machine_type || '').trim();
+        if (m) {
+          if (!byMachine[m]) {
+            byMachine[m] = { totalInspections: 0, verificationOK: 0, verificationNOK: 0, itemOK: 0, itemNOK: 0, totalItems: 0, nokItems: [] };
+          }
+          byMachine[m].totalInspections++;
+          if (insp.verification_result === 'OK') byMachine[m].verificationOK++;
+          if (insp.verification_result === 'NOK') byMachine[m].verificationNOK++;
+        }
+      });
+
       const ids = monthInspections.map(i => i.id);
       const { data: items } = await supabase
         .from('inspection_items')
@@ -443,12 +469,17 @@ app.get('/api/dashboard', authMiddleware, adminOnly, async (req, res) => {
       if (items) {
         totalItems = items.length;
         items.forEach(it => {
+          const insp = it.inspections || {};
+          const m = (insp.machine_type || '').trim();
+
           if (it.status === 'OK') {
             itemOK++;
+            if (m && byMachine[m]) byMachine[m].itemOK++;
           } else if (it.status === 'NOT OKE') {
             itemNOK++;
-            const insp = it.inspections || {};
-            nokItems.push({
+            if (m && byMachine[m]) byMachine[m].itemNOK++;
+
+            const nokObj = {
               item_id: it.id,
               inspection_id: it.inspection_id,
               form_id: insp.form_id || '',
@@ -459,8 +490,12 @@ app.get('/api/dashboard', authMiddleware, adminOnly, async (req, res) => {
               item_no: it.item_no,
               task_description: it.task_description,
               remarks: it.remarks || ''
-            });
+            };
+            nokItems.push(nokObj);
+            if (m && byMachine[m]) byMachine[m].nokItems.push(nokObj);
           }
+
+          if (m && byMachine[m]) byMachine[m].totalItems++;
         });
       }
     }
@@ -474,6 +509,7 @@ app.get('/api/dashboard', authMiddleware, adminOnly, async (req, res) => {
       totalItems,
       nokItems,
       recentInspections: recentInspections || [],
+      byMachine,
       currentMonth: yearMonth
     });
   } catch (err) {

@@ -295,3 +295,15 @@
   * Mengaktifkan thumbnail kanvas foto komponen pada tabel detail riwayat laporan inspeksi untuk semua tipe mesin.
   * Memutakhirkan mesin pelukis native HTML5 2D Canvas (`generateInspectionReportCanvas`) untuk melukis foto komponen Heater DC, AIPS, PC/PCA, maupun GTP-GIGA langsung ke dokumen ekspor JPG resolusi Retina 2x (1760 px).
   * Pembaruan query cache-buster ke `?v=20261103_v250` dan footer dokumen resmi ke `QMS-0039442 v2.5.0`.
+
+- v2.6.0: Dashboard Monitoring Kondisi Per Tipe Mesin & Redesain Kartu Laporan Mobile Jos Jis:
+  * Menambahkan section "Monitoring Kondisi Mesin" pada Dashboard utama dengan 4 kartu ringkasan visual untuk masing-masing tipe mesin: GTP-GIGA (19 items), AIPS (13 items), Heater DC (7 items), dan PC / PCA (11 items).
+  * Setiap kartu mesin menampilkan indikator kesehatan dinamis (`✓ AMAN` atau `⚠️ X MASALAH`), total inspeksi yang terlaksana, jumlah checklist yang diperiksa, dan progress bar rasio status OK vs NOT OKE.
+  * Menambahkan bilah filter tab interaktif (`Semua Peralatan`, `GTP-GIGA`, `AIPS`, `Heater DC`, `PC / PCA`) dengan warning badge jumlah temuan NOT OKE. Filter berjalan seketika (0 ms) dalam memori tanpa request ulang ke server.
+  * Memutakhirkan endpoint `GET /api/dashboard` pada `api/index.js` dan `server.js` untuk mengembalikan payload agregasi `byMachine`.
+  * Meredesain tampilan kartu detail laporan pada layar ponsel (`#page-detail`) menggunakan 2-column CSS Grid terstruktur:
+    - Nomor item (`ITEM #X`) di sudut kiri atas dan status badge (`OK` / `NOT OKE`) di sudut kanan atas sejajar rapi.
+    - Foto komponen tampil sebagai banner horizontal lapang dengan latar kontras gelap `#090d16` dan tombol "🔍 Ketuk foto untuk zoom".
+    - Teks deskripsi pekerjaan berada mandiri di bawah foto tanpa saling menumpuk/tumpang tindih (anti-overlap).
+    - Menghilangkan simbol dash liar (`-`) pada item tanpa catatan, dan menampilkan kotak catatan berbingkai khusus warna perhatian untuk temuan NOT OKE.
+  * Pembaruan query cache-buster ke `?v=20261103_v260` dan footer dokumen resmi ke `QMS-0039442 v2.6.0`.

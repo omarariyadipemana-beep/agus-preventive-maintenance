@@ -447,3 +447,67 @@ Pengguna mengunggah 3 berkas PDF panduan inspeksi komponen mesin tambahan:
   * PC / PCA (11 items)    -> Res: 1760x1784 px | JPEG: 427 KB | Photo Colors: 1458
   * GTP-GIGA (19 items)    -> Res: 1760x2584 px | JPEG: 635 KB | Photo Colors: 1532
 - [x] Siap deployment ke Vercel Production. (STATUS: SELESAI DITERAPKAN)
+
+
+---
+
+# DRAFT RENCANA REVISI: v2.6.0 (SELESAI DITERAPKAN: 3 Nov 2026)
+## Monitoring Dashboard Per Tipe Peralatan / Mesin (AIPS, GTP-GIGA, Heater DC, PC / PCA)
+
+### 1. Latar Belakang & Analisis Kebutuhan Pengguna
+- Pengguna melampirkan screenshot tampilan Dashboard utama dan tangkapan layar dropdown menu **"Tipe Peralatan"** (`AIPS`, `GTP-GIGA`, `Heater DC`, `PC / PCA`).
+- Pengguna meminta agar Dashboard dilengkapi fitur monitoring **per item peralatan / mesin**, sehingga tim supervisor dan teknisi dapat memantau performa dan riwayat kendala masing-masing mesin secara mandiri, tanpa tercampur menjadi satu angka agregat global.
+
+### 2. Rencana Implementasi & Rekayasa Arsitektur
+1. **Interactive Machine Filter Tabs di Header Dashboard (`public/index.html` & `public/app.js`):**
+   - Menambahkan bilah filter interaktif di bawah judul Dashboard:
+     `[ Semua Peralatan ]` `[ GTP-GIGA ]` `[ AIPS ]` `[ Heater DC ]` `[ PC / PCA ]`
+   - Dilengkapi *dot badge* warna merah jika pada tipe mesin tersebut terdapat temuan NOT OKE yang belum terselesaikan.
+   - Saat salah satu tab diklik:
+     * Kartu metrik (Total Inspeksi, Verifikasi OK, Verifikasi NOK) langsung memfilter data untuk mesin tersebut.
+     * Bar persentase checklist (OK vs NOT OKE) menyesuaikan rasio mesin tersebut.
+     * Widget peringatan NOT OKE hanya menampilkan daftar temuan teknis mesin tersebut.
+     * Tabel Inspeksi Terbaru memfilter riwayat sesuai mesin yang dipilih.
+2. **Section Baru: "Status Monitoring Per Tipe Peralatan" (Grid 4 Kartu Mesin):**
+   - Menempatkan 4 kartu ringkasan visual untuk ke-4 tipe mesin:
+     * **GTP-GIGA** (19 Task Items)
+     * **AIPS** (13 Task Items)
+     * **Heater DC** (7 Task Items)
+     * **PC / PCA** (11 Task Items)
+   - Setiap kartu menampilkan:
+     * Nama Tipe Peralatan & Badge Kesehatan Mesin:
+       - `✓ AMAN (100% OK)` berlatar cyan toska jika tidak ada masalah.
+       - `⚠️ X MASALAH` berlatar coral red jika ada temuan NOT OKE.
+     * Jumlah form inspeksi yang telah dikerjakan bulan berjalan.
+     * Mini progress bar rasio checklist OK vs NOT OKE.
+     * Klik pada kartu otomatis mengaktifkan filter detail untuk mesin tersebut.
+3. **Penyempurnaan Endpoint Backend Dashboard (`api/index.js` & `server.js`):**
+   - Memperkaya respon JSON `GET /api/dashboard` dengan agregasi terstruktur `byMachine`:
+     ```json
+     {
+       "byMachine": {
+         "GTP-GIGA": { "total": 1, "ok": 18, "nok": 1, "nokItems": [...] },
+         "AIPS": { "total": 0, "ok": 0, "nok": 0, "nokItems": [] },
+         "Heater DC": { "total": 0, "ok": 0, "nok": 0, "nokItems": [] },
+         "PC / PCA": { "total": 0, "ok": 0, "nok": 0, "nokItems": [] }
+       }
+     }
+     ```
+   - Seluruh data mesin terkirim dalam 1 payload efisien, sehingga interaksi klik filter di frontend berjalan instan (0 ms latency) tanpa reload jaringan.
+
+### 3. Berkas yang Akan Diubah:
+1. `api/index.js` : Agregasi metrik per tipe mesin (`byMachine`) pada backend Supabase.
+2. `server.js` : Sinkronisasi agregasi `byMachine` yang identik pada backend lokal SQLite.
+3. `public/index.html` : Struktur HTML tab filter mesin dan grid section monitoring kartu per tipe mesin.
+4. `public/style.css` : Styling responsif untuk tab filter mesin, grid kartu mesin, badge status kesehatan mesin, dan layout mobile.
+5. `public/app.js` : Logika filter interaktif, kalkulasi filter in-memory, dan rendering kartu monitoring mesin.
+
+### 4. Status Eksekusi:
+- [x] Analisis kebutuhan berdasarkan tangkapan layar dashboard dan dropdown tipe peralatan pengguna.
+- [x] Penyusunan rencana dan persetujuan pengguna ("OKE TERAPKAN").
+- [x] Implementasi agregasi `byMachine` di `api/index.js` (Supabase) dan `server.js` (SQLite).
+- [x] Implementasi UI filter tabs (`#dashboardMachineFilters`) dan grid 4 kartu monitoring mesin (`#machineCardsGrid`) di `public/index.html` dan `public/style.css`.
+- [x] Implementasi logika in-memory filtering dinamis (0ms delay) dan render kartu per mesin di `public/app.js`.
+- [x] Redesain kartu laporan detail di ponsel (`.print-table tbody tr`) menggunakan CSS Grid anti tumpang-tindih, menghilangkan dash kosong, dan menata badge status serta catatan perbaikan NOT OKE secara elegan dan jos jis.
+- [x] Verifikasi rendering antarmuka via Headless Chrome untuk desktop (1280px) dan mobile (375px).
+- [x] Peningkatan versi dokumen resmi dan cache buster ke `QMS-0039442 v2.6.0`.

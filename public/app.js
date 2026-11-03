@@ -15,6 +15,7 @@
     historyCache: null,
     historyPage: 1,
     machineTypes: [],
+    selectedDashboardMachine: '', // '' = Semua, or 'GTP-GIGA', 'AIPS', etc.
     currentDetailId: null,
     currentRole: null, // 'admin' | 'user' | null
     enteredPin: '',
@@ -76,6 +77,13 @@
     btn.addEventListener('click', () => navigateTo(btn.dataset.page));
   });
 
+  // Machine filter button click handlers
+  $$('#dashboardMachineFilters .machine-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      onSelectDashboardMachine(btn.dataset.machine || '');
+    });
+  });
+
   // ============================================================
   // DASHBOARD
   // ============================================================
@@ -96,59 +104,206 @@
   }
 
   function renderDashboard(data) {
-    // Month label
-    const [y, m] = data.currentMonth.split('-');
-    const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    $('#dashboardMonth').textContent = `Ringkasan ${monthNames[parseInt(m)-1]} ${y}`;
+    state.dashboardCache = data;
 
-    // Metrics
-    $('#metricTotal').textContent = data.totalThisMonth;
-    $('#metricOK').textContent = data.verificationOK;
-    $('#metricNOK').textContent = data.verificationNOK;
+    // By Machine breakdown data
+    const KNOWN_MACHINES = ['GTP-GIGA', 'AIPS', 'Heater DC', 'PC / PCA'];
+    const byMachine = data.byMachine || {};
+
+    // Determine active filtered dataset
+    const selectedMachine = state.selectedDashboardMachine || '';
+    let activeTotal, activeVOk, activeVNok, activeItemOk, activeItemNok, activeTotalItems, activeNokItems, activeRecent;
+
+    if (!selectedMachine) {
+      activeTotal = data.totalThisMonth || 0;
+      activeVOk = data.verificationOK || 0;
+      activeVNok = data.verificationNOK || 0;
+      activeItemOk = data.itemOK || 0;
+      activeItemNok = data.itemNOK || 0;
+      activeTotalItems = data.totalItems || 0;
+      activeNokItems = data.nokItems || [];
+      activeRecent = data.recentInspections || [];
+    } else {
+      const mStats = byMachine[selectedMachine] || {
+        totalInspections: 0,
+        verificationOK: 0,
+        verificationNOK: 0,
+        itemOK: 0,
+        itemNOK: 0,
+        totalItems: 0,
+        nokItems: []
+      };
+      activeTotal = mStats.totalInspections;
+      activeVOk = mStats.verificationOK;
+      activeVNok = mStats.verificationNOK;
+      activeItemOk = mStats.itemOK;
+      activeItemNok = mStats.itemNOK;
+      activeTotalItems = mStats.totalItems;
+      activeNokItems = mStats.nokItems || [];
+      activeRecent = (data.recentInspections || []).filter(r => (r.machine_type || '').trim() === selectedMachine);
+    }
+
+    // Month label
+    const [y, m] = (data.currentMonth || '').split('-');
+    const monthNames = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    const monthLabel = m ? `${monthNames[parseInt(m)-1]} ${y}` : '';
+    const filterTitle = selectedMachine ? ` • ${selectedMachine}` : ' • Semua Peralatan';
+    $('#dashboardMonth').textContent = `Ringkasan ${monthLabel}${filterTitle}`;
+
+    const monitorLabel = $('#monitorActiveMachineLabel');
+    if (monitorLabel) {
+      monitorLabel.textContent = selectedMachine ? `Filter Aktif: ${selectedMachine}` : 'Semua Peralatan';
+    }
+
+    // Update Filter Bar active state & counts
+    $$('#dashboardMachineFilters .machine-filter-btn').forEach(btn => {
+      const m = btn.dataset.machine || '';
+      if (m === selectedMachine) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    const filterCountAll = $('#filterCountAll');
+    if (filterCountAll) filterCountAll.textContent = data.totalThisMonth || 0;
+
+    KNOWN_MACHINES.forEach(m => {
+      const safeId = 'filterBadge_' + m.replace(/[^a-zA-Z0-9]/g, '_');
+      const badge = $('#' + safeId);
+      if (badge) {
+        const mData = byMachine[m];
+        const nokCnt = (mData && mData.nokItems) ? mData.nokItems.length : 0;
+        if (nokCnt > 0) {
+          badge.textContent = `${nokCnt} MASALAH`;
+          badge.className = 'filter-badge has-nok';
+        } else {
+          badge.textContent = '';
+          badge.className = 'filter-badge';
+        }
+      }
+    });
+
+    // Render 4 Machine Monitoring Cards
+    const grid = $('#machineCardsGrid');
+    if (grid) {
+      const machineIcons = {
+        'GTP-GIGA': '⚙️',
+        'AIPS': '🔋',
+        'Heater DC': '🔥',
+        'PC / PCA': '💻'
+      };
+
+      grid.innerHTML = KNOWN_MACHINES.map(m => {
+        const stats = byMachine[m] || {
+          totalInspections: 0,
+          verificationOK: 0,
+          verificationNOK: 0,
+          itemOK: 0,
+          itemNOK: 0,
+          totalItems: 0,
+          nokItems: []
+        };
+        const isSelected = selectedMachine === m;
+        const nokCount = (stats.nokItems && stats.nokItems.length) || 0;
+        const isAlert = nokCount > 0;
+        const statusBadge = isAlert
+          ? `<span class="machine-card-badge status-nok">⚠️ ${nokCount} MASALAH</span>`
+          : (stats.totalInspections > 0
+              ? `<span class="machine-card-badge status-ok">✓ AMAN</span>`
+              : `<span class="machine-card-badge" style="background:#f1f5f9;color:#64748b;">BELUM INSPEKSI</span>`);
+
+        const tot = stats.totalItems || 1;
+        const okPct = stats.totalItems ? Math.round((stats.itemOK / tot) * 100) : (stats.totalInspections > 0 ? 100 : 0);
+        const nokPct = stats.totalItems ? Math.round((stats.itemNOK / tot) * 100) : 0;
+
+        return `
+          <div class="machine-card ${isSelected ? 'selected' : ''}" onclick="onSelectDashboardMachine('${m}')" title="Klik untuk memfilter ${esc(m)}">
+            <div class="machine-card-head">
+              <div class="machine-card-title">
+                <span class="machine-card-title-icon">${machineIcons[m] || '🔧'}</span>
+                <span>${esc(m)}</span>
+              </div>
+              ${statusBadge}
+            </div>
+            <div class="machine-card-meta">
+              <div class="machine-card-count">
+                ${stats.totalInspections} <small>Inspeksi</small>
+              </div>
+              <div class="machine-card-task-items">
+                ${stats.totalItems} Checklist
+              </div>
+            </div>
+            <div class="machine-card-progress">
+              <div class="machine-card-progress-ok" style="width: ${okPct}%"></div>
+              <div class="machine-card-progress-nok" style="width: ${nokPct}%"></div>
+            </div>
+            <div class="machine-card-footer">
+              <span class="txt-ok">✓ OK: ${stats.itemOK}</span>
+              <span class="${nokCount > 0 ? 'txt-nok' : ''}">⚠️ NOT OKE: ${stats.itemNOK}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Top Metrics
+    $('#metricTotal').textContent = activeTotal;
+    $('#metricOK').textContent = activeVOk;
+    $('#metricNOK').textContent = activeVNok;
 
     // Status bar
-    const total = data.totalItems || 1;
-    const okPct = Math.round((data.itemOK / total) * 100);
-    const nokPct = Math.round((data.itemNOK / total) * 100);
+    const total = activeTotalItems || 1;
+    const okPct = activeTotalItems ? Math.round((activeItemOk / total) * 100) : (activeTotal > 0 ? 100 : 0);
+    const nokPct = activeTotalItems ? Math.round((activeItemNok / total) * 100) : 0;
     $('#statusBarOK').style.width = okPct + '%';
     $('#statusBarNOK').style.width = nokPct + '%';
-    $('#legendOKCount').textContent = data.itemOK;
-    $('#legendNOKCount').textContent = data.itemNOK;
+    $('#legendOKCount').textContent = activeItemOk;
+    $('#legendNOKCount').textContent = activeItemNok;
 
     // Render NOT OKE Interactive Findings Widget
-    renderNokAlertWidget(data.nokItems || [], data.itemOK, data.itemNOK);
+    renderNokAlertWidget(activeNokItems, activeItemOk, activeItemNok);
 
-    // Recent table
+    // Recent table & Mobile cards
     const tbody = $('#recentTableBody');
     const empty = $('#recentEmpty');
-
     const cardsList = $('#recentCardsList');
 
-    if (!data.recentInspections || data.recentInspections.length === 0) {
-      tbody.innerHTML = '';
+    if (!activeRecent || activeRecent.length === 0) {
+      if (tbody) tbody.innerHTML = '';
       if (cardsList) cardsList.innerHTML = '';
-      empty.style.display = 'flex';
+      if (empty) {
+        empty.style.display = 'flex';
+        const p = empty.querySelector('p');
+        if (p) {
+          p.textContent = selectedMachine
+            ? `Belum ada inspeksi untuk ${selectedMachine} bulan ini.`
+            : 'Belum ada data inspeksi bulan ini.';
+        }
+      }
       return;
     }
 
-    empty.style.display = 'none';
-    tbody.innerHTML = data.recentInspections.map(row => `
-      <tr>
-        <td><strong>${esc(row.form_id)}</strong></td>
-        <td>${esc(row.machine_type)}</td>
-        <td>${esc(row.equipment_id)}</td>
-        <td>${formatDate(row.inspection_date)}</td>
-        <td>${verificationBadge(row.verification_result)}</td>
-        <td>
-          <button class="btn-icon" onclick="viewDetail(${row.id})" title="Lihat Detail">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-          </button>
-        </td>
-      </tr>
-    `).join('');
+    if (empty) empty.style.display = 'none';
+    if (tbody) {
+      tbody.innerHTML = activeRecent.map(row => `
+        <tr>
+          <td><strong>${esc(row.form_id)}</strong></td>
+          <td>${esc(row.machine_type)}</td>
+          <td>${esc(row.equipment_id)}</td>
+          <td>${formatDate(row.inspection_date)}</td>
+          <td>${verificationBadge(row.verification_result)}</td>
+          <td>
+            <button class="btn-icon" onclick="viewDetail(${row.id})" title="Lihat Detail">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </td>
+        </tr>
+      `).join('');
+    }
 
     if (cardsList) {
-      cardsList.innerHTML = data.recentInspections.map(row => `
+      cardsList.innerHTML = activeRecent.map(row => `
         <div class="inspection-card">
           <div class="card-top">
             <span class="card-form-id">${esc(row.form_id)}</span>
@@ -182,6 +337,18 @@
       `).join('');
     }
   }
+
+  function onSelectDashboardMachine(machine) {
+    if (state.selectedDashboardMachine === machine) {
+      state.selectedDashboardMachine = '';
+    } else {
+      state.selectedDashboardMachine = machine;
+    }
+    if (state.dashboardCache) {
+      renderDashboard(state.dashboardCache);
+    }
+  }
+  window.onSelectDashboardMachine = onSelectDashboardMachine;
 
   // ============================================================
   // INTERACTIVE NOT OKE FINDINGS WIDGET
@@ -764,13 +931,14 @@
         imgHtml = `<span class="print-no-img">-</span>`;
       }
 
+      const hasRemark = item.remarks && item.remarks.trim() !== '' && item.remarks.trim() !== '-';
       return `
         <tr>
           <td class="td-no">${item.item_no}</td>
           <td class="td-img">${imgHtml}</td>
           <td class="td-desc">${esc(item.task_description)}</td>
           <td class="detail-status ${statusClass}">${esc(item.status) || '-'}</td>
-          <td class="td-remarks">${esc(item.remarks) || '-'}</td>
+          <td class="td-remarks ${hasRemark ? 'has-remarks' : 'empty-remarks'}">${esc(item.remarks) || '-'}</td>
         </tr>
       `;
     }).join('');
@@ -1395,6 +1563,11 @@
       localStorage.setItem('pm_auth_token', savedToken);
       applyRole(savedRole);
       hidePinOverlay();
+      if (savedRole === 'user') {
+        navigateTo('new-inspection', true);
+      } else {
+        navigateTo('dashboard', true);
+      }
     } else {
       sessionStorage.removeItem('pm_user_role');
       sessionStorage.removeItem('pm_auth_token');

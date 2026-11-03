@@ -484,6 +484,34 @@ app.get('/api/dashboard', authMiddleware, adminOnly, (req, res) => {
 
   const recentInspections = db.prepare(`SELECT * FROM inspections ORDER BY created_at DESC LIMIT 5`).all();
 
+  // Group by machine type for breakdown
+  const KNOWN_MACHINES = ['GTP-GIGA', 'AIPS', 'Heater DC', 'PC / PCA'];
+  const byMachine = {};
+  KNOWN_MACHINES.forEach(m => {
+    const total = db.prepare(`SELECT COUNT(*) as cnt FROM inspections WHERE inspection_date LIKE ? AND machine_type = ?`).get(`${yearMonth}%`, m).cnt;
+    const vOk = db.prepare(`SELECT COUNT(*) as cnt FROM inspections WHERE inspection_date LIKE ? AND machine_type = ? AND verification_result = 'OK'`).get(`${yearMonth}%`, m).cnt;
+    const vNok = db.prepare(`SELECT COUNT(*) as cnt FROM inspections WHERE inspection_date LIKE ? AND machine_type = ? AND verification_result = 'NOK'`).get(`${yearMonth}%`, m).cnt;
+    const itStats = db.prepare(`
+      SELECT 
+        SUM(CASE WHEN ii.status = 'OK' THEN 1 ELSE 0 END) as ok_count,
+        SUM(CASE WHEN ii.status = 'NOT OKE' THEN 1 ELSE 0 END) as nok_count,
+        COUNT(*) as total_items
+      FROM inspection_items ii
+      JOIN inspections i ON ii.inspection_id = i.id
+      WHERE i.inspection_date LIKE ? AND i.machine_type = ?
+    `).get(`${yearMonth}%`, m);
+    const mNokItems = (nokItems || []).filter(n => n.machine_type === m);
+    byMachine[m] = {
+      totalInspections: total || 0,
+      verificationOK: vOk || 0,
+      verificationNOK: vNok || 0,
+      itemOK: itStats.ok_count || 0,
+      itemNOK: itStats.nok_count || 0,
+      totalItems: itStats.total_items || 0,
+      nokItems: mNokItems
+    };
+  });
+
   res.json({
     totalThisMonth,
     verificationOK,
@@ -493,6 +521,7 @@ app.get('/api/dashboard', authMiddleware, adminOnly, (req, res) => {
     totalItems: itemStats.total_items || 0,
     nokItems: nokItems || [],
     recentInspections,
+    byMachine,
     currentMonth: yearMonth
   });
 });
