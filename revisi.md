@@ -189,3 +189,43 @@
 - [x] Implementasi fitur **Export JPG** (2x Retina scale, 95% JPEG quality) menggantikan Cetak PDF.
 - [x] Perbaikan query Dashboard (`api/index.js`): menghitung akhir bulan secara dinamis (`new Date(year, month + 1, 0).getDate()`) untuk mencegah error Postgres out of range tanggal 31 pada bulan 30 hari (November).
 - [x] Verifikasi lokal & deployment produksi Vercel (`v2.3.0`). (STATUS: SELESAI DITERAPKAN)
+
+
+---
+
+## Revisi v2.3.1 - Perbaikan Kotak Foto Hitam pada Hasil Export JPG Laporan
+
+### 1. Analisis Masalah (Root Cause):
+1. **Warna Dasar Bingkai Thumbnail Gelap (`background: #090d16`):**
+   Di `public/style.css`, elemen wadah thumbnail `.print-thumb-wrap` disetel dengan latar belakang `#090d16` (hitam pekat).
+2. **Tabrakan Cache Browser (CORS Cache Collision):**
+   Saat pengisian form checklist, foto dimuat browser tanpa header CORS. Ketika membuka laporan hasil, tag `<img>` menyertakan `crossOrigin="anonymous"`. Browser mendeteksi cache lama yang tidak bertiket CORS sehingga memblokir render gambar (*CORS tainted/cache collision*).
+3. **Kegagalan Muat Jalur Relatif di Iframe html2canvas:**
+   Saat `html2canvas` mengkloning dokumen ke iframe terisolasi (`about:blank`), path relatif (`/images/tasks/...`) gagal dimuat seketika. Akibatnya elemen `<img>` tidak tergambar dan yang tercetak hanyalah background bingkai hitam pekat tersebut.
+
+### 2. Rencana Implementasi & Solusi Permanen:
+1. **Ubah Background Wadah Menjadi Putih Bersih (`#ffffff`):**
+   Di `public/style.css`, ubah latar belakang `.print-thumb-wrap` menjadi `#ffffff` dengan border abu-abu halus (`#cbd5e1`), serasi dengan lembar kerja kertas form QMS.
+2. **Gunakan Penyematan Gambar Base64 Lokal (`public/gtp-giga-images.js`):**
+   Memetakan seluruh 19 foto komponen mesin GTP-GIGA langsung ke dalam format Base64 Data URL (`data:image/jpeg;base64,...`).
+   - 100% instan dan bebas dependensi jaringan saat ekspor.
+   - Kebal tabrakan cache browser dan zero CORS issue.
+   - html2canvas langsung merender byte gambar ke kanvas tanpa jeda atau kegagalan cloning iframe.
+3. **Penyempurnaan Logika Render & Export (`public/app.js`):**
+   - Menghapus atribut `crossOrigin="anonymous"`.
+   - Mengambil foto langsung dari data Base64 lokal (`window.GTP_GIGA_DATA_URLS`).
+   - Pada `html2canvas`, menyertakan parameter `windowWidth: 1024` dan `allowTaint: true` agar hasil unduh JPG selalu proporsional dan mengikuti standar format resmi tabel perusahaan.
+
+### 3. File yang Akan Diubah:
+1. `public/gtp-giga-images.js` : Pustaka data URL Base64 19 foto komponen GTP-GIGA (159 KB).
+2. `public/index.html` : Impor pustaka data URL sebelum `app.js`.
+3. `public/app.js` : Integrasi sumber gambar Base64 instan dan parameter `windowWidth: 1024` pada html2canvas.
+4. `public/style.css` : Ganti latar belakang thumbnail dari hitam pekat (`#090d16`) ke putih bersih (`#ffffff`) serta penyempurnaan ukuran gambar.
+
+### 4. Status Eksekusi:
+- [x] Analisis akar penyebab kotak hitam pada ekspor gambar (background gelap + CORS cache collision + html2canvas iframe isolation).
+- [x] Pembuatan generator dan file aset `public/gtp-giga-images.js` (19 foto Base64 Data URL, 159 KB).
+- [x] Penggantian background thumbnail menjadi putih bersih (`#ffffff`) dan styling gambar proporsional di `public/style.css`.
+- [x] Pemasangan data URL langsung di `public/app.js` dan penghapusan atribut `crossOrigin="anonymous"`.
+- [x] Konfigurasi `html2canvas` dengan `windowWidth: 1024` dan `allowTaint: true` untuk output format tabel standar pabrik.
+- [x] Verifikasi lokal & deployment produksi Vercel (`v2.3.1`). (STATUS: SELESAI DITERAPKAN)

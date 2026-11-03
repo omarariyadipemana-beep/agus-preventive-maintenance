@@ -1658,24 +1658,27 @@ a:hover { text-decoration: underline; }
 
 .print-thumb-wrap {
   width: 64px;
-  height: 36px;
+  height: 38px;
   border-radius: 4px;
   overflow: hidden;
   border: 1px solid #cbd5e1;
-  background: #090d16;
+  background: #ffffff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .print-thumb-img {
-  width: 100%;
-  height: 100%;
+  max-width: 62px;
+  max-height: 36px;
+  width: auto;
+  height: auto;
   object-fit: contain;
   display: block;
+  margin: auto;
 }
 
 .print-no-img {
@@ -2160,17 +2163,19 @@ a:hover { text-decoration: underline; }
     grid-template-columns: 1fr auto;
     grid-template-areas: 
       "num status"
+      "thumb thumb"
       "desc desc"
       "remarks remarks";
     background: var(--white);
     border: 1px solid var(--slate-200);
     border-radius: var(--radius-lg);
     padding: var(--space-3) var(--space-4);
-    gap: 4px 8px;
+    gap: 6px 8px;
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
   }
 
   /* No / Item Order */
+  .print-table td.td-no,
   .print-table td:first-child {
     grid-area: num;
     border: none;
@@ -2183,6 +2188,7 @@ a:hover { text-decoration: underline; }
     align-items: center;
   }
 
+  .print-table td.td-no::before,
   .print-table td:first-child::before {
     content: 'Item #';
     font-size: 0.6875rem;
@@ -2192,7 +2198,16 @@ a:hover { text-decoration: underline; }
     letter-spacing: 0.03em;
   }
 
+  /* Image Thumbnail on Mobile */
+  .print-table td.td-img {
+    grid-area: thumb;
+    border: none;
+    padding: 2px 0;
+    text-align: left;
+  }
+
   /* Task Description — Melebar Penuh 100%, Huruf Nyaman Dibaca */
+  .print-table td.td-desc,
   .print-table td:nth-child(2) {
     grid-area: desc;
     border: none;

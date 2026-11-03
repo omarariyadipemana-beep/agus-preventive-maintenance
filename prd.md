@@ -267,3 +267,8 @@
   * Menambahkan kolom GAMBAR pada tabel laporan cetak/detail (`#printTable`) di antara No dan Task List dengan thumbnail 64x36px komponen mesin GTP-GIGA (interaktif dengan modal Lightbox pembesaran).
   * Mengganti tombol "Cetak PDF" dengan "Export JPG" menggunakan library lokal `html2canvas.min.js` (skala 2x Retina, 95% JPEG quality), memudahkan penyimpanan gambar laporan langsung ke galeri HP dan share instan ke WhatsApp grup.
   * Memperbaiki bug ringkasan bulanan Dashboard di mana perhitungan `endOfMonth` menggunakan hardcode `-31`. Pada bulan dengan 30 hari seperti November, ini memicu error PostgreSQL 22008 (date out of range) sehingga metrik kembali bernilai 0. Perhitungan diperbaiki dinamis menggunakan `new Date(year, month + 1, 0).getDate()`.
+- v2.3.1: Perbaikan Kotak Foto Hitam pada Hasil Export JPG Laporan:
+  * Mengeliminasi warna latar belakang gelap (#090d16) pada wadah thumbnail (.print-thumb-wrap), diganti menjadi putih bersih (#ffffff) dengan batas bingkai abu-abu halus (#cbd5e1).
+  * Menyematkan seluruh 19 foto komponen GTP-GIGA langsung sebagai Base64 Data URL melalui modul lokal `public/gtp-giga-images.js` (159 KB), menghilangkan dependensi jaringan, CORS cache collision, dan delay muat gambar.
+  * Menghapus atribut `crossOrigin="anonymous"` pada tag gambar detail laporan yang sebelumnya memicu penolakan cache browser.
+  * Menambahkan parameter `windowWidth: 1024` dan `allowTaint: true` pada `html2canvas` agar hasil unduh JPG selalu proporsional dalam format tabel resmi standar perusahaan (QMS-0039442) terlepas dari resolusi layar perangkat yang digunakan.

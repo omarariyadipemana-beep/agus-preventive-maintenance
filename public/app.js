@@ -704,6 +704,15 @@
     state.currentPage = 'detail';
   }
 
+  
+  // Helper to get Base64 data URL or fallback path for task images
+  function getTaskImageSrc(itemNo) {
+    if (typeof window !== 'undefined' && window.GTP_GIGA_DATA_URLS && window.GTP_GIGA_DATA_URLS[itemNo]) {
+      return window.GTP_GIGA_DATA_URLS[itemNo];
+    }
+    return `/images/tasks/gtp-giga/${itemNo}.jpg`;
+  }
+
   function renderDetail(data) {
     $('#detailTitle').textContent = 'Detail Inspeksi';
     $('#detailSubtitle').textContent = data.form_id + ' — ' + data.machine_type;
@@ -724,11 +733,11 @@
       const statusClass = item.status === 'OK' ? 's-ok' : (item.status === 'NOT OKE' ? 's-nok' : '');
       let imgHtml = '';
       if (isGtpGiga) {
-        const imgSrc = `/images/tasks/gtp-giga/${item.item_no}.jpg`;
+        const imgSrc = getTaskImageSrc(item.item_no);
         const titleAttr = esc(`Item #${item.item_no} : ${item.task_description}`);
         imgHtml = `
           <div class="print-thumb-wrap" onclick="openTaskImageModal('${imgSrc}', '${titleAttr}', '${esc(item.task_description)}')" title="Klik untuk memperbesar">
-            <img src="${imgSrc}" alt="Item ${item.item_no}" class="print-thumb-img" crossOrigin="anonymous">
+            <img src="${imgSrc}" alt="Item ${item.item_no}" class="print-thumb-img">
           </div>
         `;
       } else {
@@ -782,7 +791,9 @@
         // Render at 2x resolution for ultra-sharp text and crisp photos
         const canvas = await html2canvas(area, {
           scale: 2,
+          windowWidth: 1024,
           useCORS: true,
+          allowTaint: true,
           backgroundColor: '#ffffff',
           logging: false
         });
