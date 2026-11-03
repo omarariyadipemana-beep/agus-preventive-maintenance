@@ -927,16 +927,22 @@
   // PIN AUTHENTICATION & KEYPAD LOGIC
   // ============================================================
   function initPinAuth() {
-    // Check existing session
-    const savedRole = sessionStorage.getItem('pm_user_role');
-    const savedToken = sessionStorage.getItem('pm_auth_token');
+    // Check existing session (check sessionStorage first, then fallback to localStorage)
+    const savedRole = sessionStorage.getItem('pm_user_role') || localStorage.getItem('pm_user_role');
+    const savedToken = sessionStorage.getItem('pm_auth_token') || localStorage.getItem('pm_auth_token');
     if (savedRole && savedToken && (savedRole === 'admin' || savedRole === 'user')) {
       state.authToken = savedToken;
+      sessionStorage.setItem('pm_user_role', savedRole);
+      sessionStorage.setItem('pm_auth_token', savedToken);
+      localStorage.setItem('pm_user_role', savedRole);
+      localStorage.setItem('pm_auth_token', savedToken);
       applyRole(savedRole);
       hidePinOverlay();
     } else {
       sessionStorage.removeItem('pm_user_role');
       sessionStorage.removeItem('pm_auth_token');
+      localStorage.removeItem('pm_user_role');
+      localStorage.removeItem('pm_auth_token');
       state.authToken = null;
       showPinOverlay();
     }
@@ -1018,6 +1024,8 @@
         state.authToken = data.token;
         sessionStorage.setItem('pm_auth_token', data.token);
         sessionStorage.setItem('pm_user_role', data.role);
+        localStorage.setItem('pm_auth_token', data.token);
+        localStorage.setItem('pm_user_role', data.role);
         applyRole(data.role);
         hidePinOverlay();
         showToast('Masuk sebagai ' + (data.role === 'admin' ? 'Admin' : 'User'), 'success');
@@ -1085,6 +1093,8 @@
     }
     sessionStorage.removeItem('pm_user_role');
     sessionStorage.removeItem('pm_auth_token');
+    localStorage.removeItem('pm_user_role');
+    localStorage.removeItem('pm_auth_token');
     state.currentRole = null;
     state.authToken = null;
     showPinOverlay();

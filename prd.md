@@ -251,3 +251,8 @@
   * Fallback placeholder netral jika tipe mesin belum memiliki foto panduan visual.
   * Penyelarasan CSS responsif mobile berbasis kelas semantik (.td-status, .td-remarks, .td-img) agar layout kartu smartphone tetap presisi dan anti-geser.
   * Proteksi cetak PDF A4 tetap terjaga dalam 1 halaman formal pabrik.
+- v2.2.1: Perbaikan Sesi Serverless Vercel (Stateless HMAC-SHA256 Token):
+  * Mengeliminasi `sessions = new Map()` di RAM serverless yang memicu error 401 dan logout paksa saat submit form.
+  * Menerapkan pembuatan dan validasi token kriptografis stateless HMAC-SHA256 yang kebal cold start dan container recycle.
+  * Menyimpan token secara redundan di `localStorage` dan `sessionStorage` pada browser pengguna.
+  * Masa aktif sesi stabil hingga 14 hari tanpa logout mendadak di tengah inspeksi.

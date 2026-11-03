@@ -9,25 +9,62 @@ const path = require('path');
 const app = express();
 
 // ============================================================
-// SECURITY: PIN & SESSION MANAGEMENT (SERVER-SIDE)
+// SECURITY: PIN & STATELESS HMAC-SHA256 AUTH (SERVERLESS RESILIENT)
 // ============================================================
 const PIN_MAP = {
   '2323': 'user',
   '3434': 'admin'
 };
 
-const sessions = new Map();
+const AUTH_SECRET = process.env.AUTH_SECRET || process.env.SUPABASE_KEY || 'agus-pm-token-secret-salt-2026';
 
-function generateToken() {
-  return crypto.randomBytes(32).toString('hex');
+function createSignedToken(role) {
+  const timestamp = Date.now();
+  const nonce = crypto.randomBytes(8).toString('hex');
+  const payload = `${role}.${timestamp}.${nonce}`;
+  const hmac = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('hex');
+  const tokenRaw = `${payload}.${hmac}`;
+  return Buffer.from(tokenRaw, 'utf8').toString('base64url');
+}
+
+function verifySignedToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  try {
+    const raw = Buffer.from(token, 'base64url').toString('utf8');
+    const parts = raw.split('.');
+    if (parts.length !== 4) return null;
+    const [role, timestampStr, nonce, hmac] = parts;
+    if (role !== 'user' && role !== 'admin') return null;
+
+    const payload = `${role}.${timestampStr}.${nonce}`;
+    const expectedHmac = crypto.createHmac('sha256', AUTH_SECRET).update(payload).digest('hex');
+
+    const hmacBuf = Buffer.from(hmac, 'hex');
+    const expectedBuf = Buffer.from(expectedHmac, 'hex');
+    if (hmacBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(hmacBuf, expectedBuf)) {
+      return null;
+    }
+
+    // Expiry check: 14 days
+    const timestamp = parseInt(timestampStr, 10);
+    const maxAge = 14 * 24 * 60 * 60 * 1000;
+    if (isNaN(timestamp) || Date.now() - timestamp > maxAge) {
+      return null;
+    }
+
+    return { role };
+  } catch (err) {
+    return null;
+  }
 }
 
 function authMiddleware(req, res, next) {
   const token = req.headers['x-auth-token'];
-  if (!token || !sessions.has(token)) {
+  const session = verifySignedToken(token);
+  if (!session) {
     return res.status(401).json({ error: 'Akses ditolak. Silakan login terlebih dahulu.' });
   }
-  req.userRole = sessions.get(token).role;
+  req.userRole = session.role;
   next();
 }
 
@@ -113,19 +150,16 @@ app.post('/api/auth/verify-pin', pinLimiter, (req, res) => {
   if (!pin || typeof pin !== 'string') {
     return res.status(400).json({ success: false, error: 'PIN diperlukan.' });
   }
-  const role = PIN_MAP[pin];
+  const role = PIN_MAP[pin.trim()];
   if (!role) {
     return res.status(401).json({ success: false, error: 'PIN salah.' });
   }
-  const token = generateToken();
-  sessions.set(token, { role, createdAt: Date.now() });
+  const token = createSignedToken(role);
   res.json({ success: true, token, role });
 });
 
 // AUTH: Logout
 app.post('/api/auth/logout', (req, res) => {
-  const token = req.headers['x-auth-token'];
-  if (token) sessions.delete(token);
   res.json({ success: true });
 });
 
