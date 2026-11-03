@@ -203,6 +203,7 @@
               <thead>
                 <tr>
                   <th class="th-no">No</th>
+                  <th class="th-img">Gambar</th>
                   <th class="th-task">Task List</th>
                   <th class="th-status">Status</th>
                   <th class="th-remarks">Keterangan</th>
@@ -393,6 +394,27 @@
       <div class="modal-actions">
         <button class="btn btn-secondary" id="confirmCancel">Batal</button>
         <button class="btn btn-danger" id="confirmOK">Hapus</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Lightbox Preview Modal Gambar Tugas -->
+  <div class="task-img-modal-overlay" id="taskImageModal" style="display:none;">
+    <div class="task-img-modal-card">
+      <div class="task-img-modal-header">
+        <div>
+          <span class="task-img-modal-badge" id="taskImgBadge">Item #1</span>
+          <h3 id="taskImgTitle">Panduan Visual Komponen</h3>
+        </div>
+        <button type="button" class="btn-close-modal" id="taskImgCloseBtn" aria-label="Tutup">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="task-img-modal-body">
+        <img id="taskImgPreview" src="" alt="Panduan Tugas" class="task-img-large">
+      </div>
+      <div class="task-img-modal-footer">
+        <p id="taskImgDesc"></p>
       </div>
     </div>
   </div>

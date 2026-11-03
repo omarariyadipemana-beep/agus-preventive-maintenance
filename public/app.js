@@ -360,17 +360,43 @@
 
   function renderTaskList(tasks) {
     const tbody = $('#taskTableBody');
+    const machineType = ($('#machineType').value || '').trim();
+    const isGtpGiga = machineType === 'GTP-GIGA';
+
     tbody.innerHTML = tasks.map(task => {
       // Split task description by ":"
       const parts = task.task_description.split(':');
       const category = parts[0].trim();
       const detail = parts.slice(1).join(':').trim();
 
+      let imgHtml = '';
+      if (isGtpGiga) {
+        const imgSrc = `/images/tasks/gtp-giga/${task.item_no}.jpg`;
+        const titleAttr = esc(`Item #${task.item_no} : ${category}`);
+        const descAttr = esc(task.task_description);
+        imgHtml = `
+          <div class="task-thumb-wrap" onclick="openTaskImageModal('${imgSrc}', '${titleAttr}', '${descAttr}')" title="Klik untuk memperbesar gambar">
+            <img src="${imgSrc}" alt="Item ${task.item_no}" class="task-thumb-img" loading="lazy">
+            <span class="task-thumb-zoom-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            </span>
+          </div>
+        `;
+      } else {
+        imgHtml = `
+          <div class="task-thumb-placeholder" title="Belum ada foto panduan">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>-</span>
+          </div>
+        `;
+      }
+
       return `
         <tr id="task_row_${task.item_no}">
-          <td>${task.item_no}</td>
-          <td class="task-desc"><strong>${esc(category)}</strong>${detail ? ' : ' + esc(detail) : ''}</td>
-          <td>
+          <td class="td-no">${task.item_no}</td>
+          <td class="td-img">${imgHtml}</td>
+          <td class="td-desc task-desc"><strong>${esc(category)}</strong>${detail ? ' : ' + esc(detail) : ''}</td>
+          <td class="td-status">
             <div class="status-radios">
               <input type="radio" class="status-radio" name="status_${task.item_no}" id="ok_${task.item_no}" value="OK" onchange="onTaskStatusChange(${task.item_no}, 'OK')">
               <label for="ok_${task.item_no}" class="status-label label-ok">
@@ -385,7 +411,7 @@
               </label>
             </div>
           </td>
-          <td>
+          <td class="td-remarks">
             <input type="text" class="task-remark-input" id="remark_${task.item_no}" data-item="${task.item_no}" placeholder="Keterangan (opsional)...">
           </td>
         </tr>
@@ -787,6 +813,62 @@
     if (e.target === $('#confirmModal')) {
       $('#confirmModal').classList.remove('show');
       pendingDeleteId = null;
+    }
+  });
+
+  // ============================================================
+  // TASK IMAGE LIGHTBOX MODAL
+  // ============================================================
+  window.openTaskImageModal = function(src, title, desc) {
+    const modal = $('#taskImageModal');
+    if (!modal) return;
+    const img = $('#taskImgPreview');
+    if (img) img.src = src;
+
+    const badgeEl = $('#taskImgBadge');
+    const titleEl = $('#taskImgTitle');
+    const descEl = $('#taskImgDesc');
+
+    if (title && title.includes(' : ')) {
+      const parts = title.split(' : ');
+      if (badgeEl) badgeEl.textContent = parts[0];
+      if (titleEl) titleEl.textContent = parts.slice(1).join(' : ');
+    } else {
+      if (badgeEl) badgeEl.textContent = 'Panduan SOP';
+      if (titleEl) titleEl.textContent = title || 'Panduan Visual Komponen';
+    }
+
+    if (descEl) descEl.textContent = desc || '';
+    modal.classList.add('show');
+    modal.style.display = 'flex';
+  };
+
+  window.closeTaskImageModal = function() {
+    const modal = $('#taskImageModal');
+    if (modal) {
+      modal.classList.remove('show');
+      modal.style.display = 'none';
+      const img = $('#taskImgPreview');
+      if (img) img.src = '';
+    }
+  };
+
+  const taskImgCloseBtn = $('#taskImgCloseBtn');
+  if (taskImgCloseBtn) {
+    taskImgCloseBtn.addEventListener('click', closeTaskImageModal);
+  }
+
+  const taskImageModal = $('#taskImageModal');
+  if (taskImageModal) {
+    taskImageModal.addEventListener('click', (e) => {
+      if (e.target === taskImageModal) closeTaskImageModal();
+    });
+  }
+
+  // Support ESC key to close lightbox modal
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeTaskImageModal();
     }
   });
 

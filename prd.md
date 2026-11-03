@@ -243,3 +243,11 @@
   * Proteksi CORS untuk domain resmi ormmaintenance.vercel.app.
   * Sanitasi input search dan eliminasi kebocoran pesan error internal.
   * Dukungan RLS pada skema database Supabase.
+- v2.1.1: Pembersihan tampilan bocoran PIN pada modal login dan penghapusan karakter sisa literal head.
+- v2.2.0: Integrasi Kolom Gambar Panduan Visual SOP Mesin (GTP & GIGA):
+  * Penambahan kolom 'GAMBAR' di antara kolom 'No' dan 'Task List' pada tabel checklist formulir (#taskTable).
+  * Penyediaan 19 aset foto komponen GTP-GIGA resolusi proporsional di public/images/tasks/gtp-giga/.
+  * Fitur interaktif Click-to-Zoom (Lightbox Modal) untuk memudahkan operator/teknisi di lapangan memeriksa detail fisik komponen secara tajam.
+  * Fallback placeholder netral jika tipe mesin belum memiliki foto panduan visual.
+  * Penyelarasan CSS responsif mobile berbasis kelas semantik (.td-status, .td-remarks, .td-img) agar layout kartu smartphone tetap presisi dan anti-geser.
+  * Proteksi cetak PDF A4 tetap terjaga dalam 1 halaman formal pabrik.

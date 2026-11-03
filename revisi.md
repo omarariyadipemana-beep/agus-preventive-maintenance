@@ -29,9 +29,9 @@
 # Revisi v2.1.0: Hardening Keamanan Menyeluruh (SELESAI DITERAPKAN)
 - **1. Autentikasi PIN Server-Side:** PIN `2323` dan `3434` dihapus 100% dari kode JavaScript frontend (public/app.js). Verifikasi kini ditangani secara aman di endpoint server POST /api/auth/verify-pin yang mengembalikan cryptographic session token acak.
 - **2. Middleware Autentikasi API:** Seluruh endpoint API kini diproteksi dengan header X-Auth-Token. Request tanpa token valid langsung ditolak (401 Unauthorized).
-- **3. Role-Based Access Control (RBAC):** Endpoint DELETE /api/inspections/:id dan GET /api/dashboard dikunci secara server-side hanya untuk role dmin.
+- **3. Role-Based Access Control (RBAC):** Endpoint DELETE /api/inspections/:id dan GET /api/dashboard dikunci secara server-side hanya untuk role admin.
 - **4. Rate Limiting:** Pembatasan brute-force PIN maksimal 5 kali per menit, dan pembatasan traffic API umum maksimal 100 request per menit per IP (express-rate-limit).
-- **5. CORS Restriction:** Akses API dibatasi hanya untuk origin resmi (ormmaintenance.vercel.app dan localhost).
+- **5. CORS Restriction:** Akses API dibatasi hanya untuk origin resmi (formmaintenance.vercel.app dan localhost).
 - **6. Sanitasi Search Filter:** Input parameter pencarian pada integrasi Supabase dibersihkan dari karakter manipulasi filter.
 - **7. Proteksi Error Leakage:** Pesan error internal sistem tidak lagi diekspos ke client publik.
 - **8. Skema RLS Supabase:** Menambahkan definisi kebijakan Row Level Security pada supabase_schema.sql.
@@ -40,4 +40,18 @@
 
 # Revisi v2.1.1: Pembersihan Tampilan PIN & String Literal Head (SELESAI DITERAPKAN)
 - Menghapus tampilan bocoran PIN (`Role akses: User / Admin`) pada modal login di public/index.html.
-- Menghapus karakter sisa `r`n pada tag link favicon di public/index.html yang merender teks di atas halaman.
+- Menghapus karakter sisa literal head pada tag link favicon di public/index.html yang merender teks di atas halaman.
+
+---
+
+# Revisi v2.2.0: Integrasi Kolom Gambar Panduan Visual SOP Mesin GTP & GIGA (SELESAI DITERAPKAN)
+- **1. Kolom GAMBAR Baru:** Menambahkan kolom `GAMBAR` tepat di antara kolom `No` dan `Task List` pada tabel formulir inspeksi (`#taskTable`) di `public/index.html`.
+- **2. Aset 19 Foto Mesin GTP-GIGA:** 19 foto komponen teknis telah diekstraksi dari dokumen resmi PDF ke `public/images/tasks/gtp-giga/1.jpg` s/d `19.jpg` (resolusi proporsional, total ukuran ~120 KB, sangat ringan).
+- **3. Fitur Interaktif Click-to-Zoom (Lightbox Modal):**
+  * Thumbnail di tabel berukuran proporsional (~72px × 40px) dengan hover micro-interaction halus dan ikon pembesar.
+  * Saat diklik/ditap, terbuka modal Lightbox `#taskImageModal` dengan foto beresolusi penuh, badge nomor item, judul SOP, deskripsi panduan, serta tombol tutup (X), klik latar belakang, atau tombol `ESC`.
+- **4. Graceful Fallback Mesin Lain:** Jika memilih tipe mesin selain GTP-GIGA (seperti PCA, AIPS, Heater DC), sistem menampilkan placeholder netral elegan tanpa error.
+- **5. Hardening CSS Responsif Mobile & Print Proteksi:**
+  * Selektor CSS responsif mobile diperbarui dari `nth-child` kaku menjadi kelas semantik (`.td-status`, `.td-remarks`, `.td-img`).
+  * Di layar ponsel, thumbnail tampil rapi dengan teks panduan `🔍 Ketuk foto untuk zoom`, dan tombol `OK / NOT OKE` tetap presisi.
+  * Cetak A4 PDF tetap terlindungi 100% formal tanpa terpotong di lembar kerja pabrik.
