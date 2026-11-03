@@ -105,3 +105,41 @@
 - [x] Implementasi HMAC-SHA256 token di `api/index.js`, `server.js`, dan `public/app.js`.
 - [x] Pengujian unit test cryptographic signature.
 - [x] Selesai diterapkan dan siap di-deploy ke Vercel Production.
+
+
+---
+
+# Revisi v2.2.2: Redesain Tampilan Mobile Form Checklist - Fit, Banner Foto Jelas & Touch-Friendly (SELESAI DITERAPKAN)
+## Transformasi Tampilan Kartu Inspeksi Mobile (Jos Jis)
+
+### 1. Masalah Tampilan Sebelumnya pada Layar Smartphone
+- Nomor urut 1. berdiri sendiri di baris atas.
+- Foto panduan berukuran terlalu kecil (thumbnail mini 76px x 44px) yang membuat teknisi kesulitan melihat komponen mesin tanpa harus terus-menerus mengklik zoom.
+- Teks petunjuk Ketuk foto untuk zoom terhimpit di samping foto dan terpotong ke bawah menjadi 4 baris sempit.
+- Tombol status OK / NOT OKE dan kolom keterangan belum memanfaatkan lebar layar ponsel secara optimal (kurang fit).
+
+### 2. Solusi & Rekayasa Arsitektur Kartu Mobile yang Diterapkan
+1. **Header Kartu Elegan (Item Badge):**
+   - Nomor urut diubah menjadi pill badge modern: Item #1, Item #2, dst. (warna Electric Violet berlatar lembut).
+2. **Banner Foto Komponen yang Lebar & Jelas (Fit Width):**
+   - Foto diperbesar memenuhi lebar kartu (width: 100%) dengan tinggi proporsional (~155px) dan kanvas kontras gelap (#090d16) agar komponen fisik mesin terlihat sangat jelas seketika tanpa perlu dizoom.
+   - Menggunakan object-fit: contain sehingga tidak ada bagian mesin atau teks panduan yang terpotong.
+   - Menyematkan floating glassmorphic badge di pojok kanan bawah foto: [ 🔍 Perbesar ] yang membuka Lightbox saat diklik.
+3. **Tipografi Deskripsi Tugas yang Rapi:**
+   - Menempatkan deskripsi pekerjaan (**Cleaning / Inspeksi / Ganti**) tepat di bawah banner foto dengan hierarki teks yang tegas, mudah dibaca (*scannable*), dan tidak terhimpit.
+4. **Tombol Status Berukuran Penuh (Thumb-Friendly):**
+   - Mengubah toggle status menjadi selebar 100% layar kartu: tombol [ ✓ OK ] (50%) dan [ ✗ NOT OKE ] (50%) dengan tinggi 42px sehingga sangat nyaman ditekan oleh jempol operator di lapangan.
+5. **Kolom Keterangan Nyaman:**
+   - Input keterangan dibuat full width dengan padding ergonomis dan border radius modern.
+6. **Proteksi Tampilan Desktop & Cetak:**
+   - Seluruh perubahan tampilan ini diisolasi murni di dalam media query mobile @media (max-width: 768px) pada public/style.css.
+   - Tampilan desktop (tabel multi-kolom) dan cetak PDF A4 tetap 100% aman tanpa terganggu.
+
+### 3. File yang Telah Diubah:
+1. public/style.css : Tata letak flex mobile .task-table tbody tr, banner foto lebar, badge nomor, dan toggle tombol jempol 100% fit.
+
+### 4. Status Eksekusi:
+- [x] Analisis screenshot tampilan mobile dari pengguna.
+- [x] Perancangan CSS card layout mobile modern.
+- [x] Implementasi CSS mobile di public/style.css.
+- [x] Selesai diterapkan dan siap di-deploy ke Vercel Production.

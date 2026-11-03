@@ -256,3 +256,10 @@
   * Menerapkan pembuatan dan validasi token kriptografis stateless HMAC-SHA256 yang kebal cold start dan container recycle.
   * Menyimpan token secara redundan di `localStorage` dan `sessionStorage` pada browser pengguna.
   * Masa aktif sesi stabil hingga 14 hari tanpa logout mendadak di tengah inspeksi.
+- v2.2.2: Redesain Tampilan Mobile Form Checklist (Fit, Banner Foto Jelas, Jos Jis):
+  * Header nomor item diubah menjadi pill badge modern (Item #1, Item #2).
+  * Foto panduan diperbesar menjadi banner lebar 100% kartu (~155px tinggi) dengan kanvas kontras gelap dan object-fit contain.
+  * Floating pill badge [ 🔍 Perbesar ] di sudut foto untuk mempermudah akses Lightbox.
+  * Teks deskripsi tugas tertata rapi di bawah foto dengan tipografi hierarki jelas.
+  * Toggle tombol OK / NOT OKE diubah menjadi full-width 50%-50% (touch target jempol 42px).
+  * Input keterangan dibuat selebar kartu penuh (fit width).
