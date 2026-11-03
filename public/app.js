@@ -718,14 +718,30 @@
 
     // Task table
     const tbody = $('#printTableBody');
+    const isGtpGiga = (data.machine_type || '').trim() === 'GTP-GIGA';
+
     tbody.innerHTML = data.items.map(item => {
       const statusClass = item.status === 'OK' ? 's-ok' : (item.status === 'NOT OKE' ? 's-nok' : '');
+      let imgHtml = '';
+      if (isGtpGiga) {
+        const imgSrc = `/images/tasks/gtp-giga/${item.item_no}.jpg`;
+        const titleAttr = esc(`Item #${item.item_no} : ${item.task_description}`);
+        imgHtml = `
+          <div class="print-thumb-wrap" onclick="openTaskImageModal('${imgSrc}', '${titleAttr}', '${esc(item.task_description)}')" title="Klik untuk memperbesar">
+            <img src="${imgSrc}" alt="Item ${item.item_no}" class="print-thumb-img" crossOrigin="anonymous">
+          </div>
+        `;
+      } else {
+        imgHtml = `<span class="print-no-img">-</span>`;
+      }
+
       return `
         <tr>
-          <td>${item.item_no}</td>
-          <td>${esc(item.task_description)}</td>
-          <td class="detail-status ${statusClass}">${esc(item.status) || '—'}</td>
-          <td>${esc(item.remarks) || '—'}</td>
+          <td class="td-no">${item.item_no}</td>
+          <td class="td-img">${imgHtml}</td>
+          <td class="td-desc">${esc(item.task_description)}</td>
+          <td class="detail-status ${statusClass}">${esc(item.status) || '-'}</td>
+          <td class="td-remarks">${esc(item.remarks) || '-'}</td>
         </tr>
       `;
     }).join('');
@@ -739,10 +755,62 @@
     $('#printSigLogistic').textContent = data.logistic_leader_name || '_______________';
   }
 
-  // Print PDF
-  $('#btnPrintPDF').addEventListener('click', () => {
-    window.print();
-  });
+  // Export JPG (High-resolution crisp JPEG using html2canvas)
+  const btnExportJPG = $('#btnExportJPG');
+  if (btnExportJPG) {
+    btnExportJPG.addEventListener('click', async () => {
+      const area = $('#printArea');
+      if (!area) return;
+
+      showToast('Menyiapkan gambar laporan...', 'info');
+
+      try {
+        if (typeof html2canvas === 'undefined') {
+          throw new Error('Pustaka html2canvas belum termuat.');
+        }
+
+        // Wait for all images inside printArea to load
+        const images = area.querySelectorAll('img');
+        await Promise.all([...images].map(img => {
+          if (img.complete) return Promise.resolve();
+          return new Promise(resolve => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+        }));
+
+        // Render at 2x resolution for ultra-sharp text and crisp photos
+        const canvas = await html2canvas(area, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false
+        });
+
+        const rawFormId = ($('#printFormId').textContent || 'LAPORAN').trim().replace(/[^a-zA-Z0-9_-]/g, '_');
+        const filename = `FORM_PREVENTIVE_MTC_${rawFormId}.jpg`;
+
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            showToast('Gagal memproses gambar laporan', 'error');
+            return;
+          }
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          showToast('Gambar laporan berhasil diunduh (JPG)!', 'success');
+        }, 'image/jpeg', 0.95);
+      } catch (err) {
+        console.error('Export JPG error:', err);
+        showToast('Gagal mengunduh gambar laporan', 'error');
+      }
+    });
+  }
 
   // Export Excel (authenticated blob download)
   $('#btnExportExcel').addEventListener('click', async () => {

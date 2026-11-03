@@ -263,3 +263,7 @@
   * Teks deskripsi tugas tertata rapi di bawah foto dengan tipografi hierarki jelas.
   * Toggle tombol OK / NOT OKE diubah menjadi full-width 50%-50% (touch target jempol 42px).
   * Input keterangan dibuat selebar kartu penuh (fit width).
+- v2.3.0: Penambahan Kolom Foto Hasil Laporan, Export JPG Resolusi Tinggi, dan Fix Metrik Dashboard:
+  * Menambahkan kolom GAMBAR pada tabel laporan cetak/detail (`#printTable`) di antara No dan Task List dengan thumbnail 64x36px komponen mesin GTP-GIGA (interaktif dengan modal Lightbox pembesaran).
+  * Mengganti tombol "Cetak PDF" dengan "Export JPG" menggunakan library lokal `html2canvas.min.js` (skala 2x Retina, 95% JPEG quality), memudahkan penyimpanan gambar laporan langsung ke galeri HP dan share instan ke WhatsApp grup.
+  * Memperbaiki bug ringkasan bulanan Dashboard di mana perhitungan `endOfMonth` menggunakan hardcode `-31`. Pada bulan dengan 30 hari seperti November, ini memicu error PostgreSQL 22008 (date out of range) sehingga metrik kembali bernilai 0. Perhitungan diperbaiki dinamis menggunakan `new Date(year, month + 1, 0).getDate()`.

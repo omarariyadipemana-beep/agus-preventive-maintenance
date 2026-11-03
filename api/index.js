@@ -362,9 +362,12 @@ app.get('/api/dashboard', authMiddleware, adminOnly, async (req, res) => {
   if (!checkSupabase(res)) return;
   try {
     const now = new Date();
-    const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const yearMonth = `${year}-${String(month + 1).padStart(2, "0")}`;
     const startOfMonth = `${yearMonth}-01`;
-    const endOfMonth = `${yearMonth}-31`;
+    const lastDay = new Date(year, month + 1, 0).getDate();
+    const endOfMonth = `${yearMonth}-${String(lastDay).padStart(2, "0")}`;
 
     // 1. Total this month
     const { count: totalThisMonth } = await supabase

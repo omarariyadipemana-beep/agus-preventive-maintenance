@@ -143,3 +143,49 @@
 - [x] Perancangan CSS card layout mobile modern.
 - [x] Implementasi CSS mobile di public/style.css.
 - [x] Selesai diterapkan dan siap di-deploy ke Vercel Production.
+
+
+---
+
+# DRAFT RENCANA REVISI: v2.3.0 (MENUNGGU PERSETUJUAN: "OKE TERAPKAN")
+## Penambahan Kolom Foto pada Hasil Laporan & Fitur Export Gambar JPG (Pengganti PDF)
+
+### 1. Latar Belakang & Kebutuhan Pengguna
+- Pengguna telah menguji proses pengisian dan penyimpanan form, data tersimpan dengan sukses ke database.
+- Pengguna meminta agar halaman hasil laporan inspeksi (`#printArea` / `#printTable`) juga **menyertakan kolom GAMBAR** persis seperti form inputan (di antara kolom `NO` dan `TASK LIST`).
+- Pengguna meminta agar tombol ekspor laporan **tidak lagi menggunakan format PDF**, melainkan **di-export langsung sebagai file gambar JPG** resolusi tinggi agar lebih mudah dan praktis dibagikan (misalnya via WhatsApp, email, atau disimpan di galeri smartphone).
+
+### 2. Rencana Implementasi Teknis
+1. **Pustaka Konversi Gambar Ringan & Offline (`public/html2canvas.min.js`):**
+   - Menyiapkan modul `html2canvas.min.js` di dalam folder `public/` agar proses konversi DOM ke gambar berjalan 100% lokal, cepat, dan tanpa dependensi eksternal.
+   - Diimpor di `public/index.html` sebelum `app.js`.
+2. **Perubahan Header & Tombol Aksi di Halaman Laporan (`public/index.html`):**
+   - Menyisipkan header `<th class="th-img">Gambar</th>` di antara `<th class="th-no">No</th>` dan `<th class="th-task">Task List</th>` pada tabel hasil laporan (`#printTable`).
+   - Mengganti tombol `#btnPrintPDF` ("Cetak PDF") menjadi `#btnExportJPG` dengan label **"Export JPG"** dan ikon unduh visual.
+3. **Logika Render Gambar & Download JPG (`public/app.js`):**
+   - Di fungsi `renderDetail(data)`:
+     * Menyisipkan elemen `<td>` berisi thumbnail foto komponen mesin (`/images/tasks/gtp-giga/${item.item_no}.jpg`).
+     * Menjaga atribut `crossOrigin="anonymous"` agar `html2canvas` dapat merender gambar tanpa kendala taint canvas.
+     * Thumbnail foto juga dapat diklik untuk zoom (Lightbox) saat dibuka di browser.
+   - Di event handler `#btnExportJPG`:
+     * Menggunakan `html2canvas(printArea, { scale: 2, backgroundColor: '#ffffff', useCORS: true })` untuk menghasilkan gambar beresolusi tajam (*2x crisp scale*).
+     * Mengonversi canvas ke format JPEG kualitas tinggi (95%).
+     * Otomatis mengunduh berkas dengan nama file formal: `FORM_PREVENTIVE_MTC_${formId}.jpg`.
+4. **Pembaruan Styling Tabel Laporan (`public/style.css`):**
+   - Mengatur lebar kolom `.print-table .th-img` dan `.print-table td.td-img` (~65px) serta thumbnail `.print-thumb-img` (~56px × 32px, rounded halus, border tipis).
+   - Menjamin tata letak hasil cetak tetap padat, elegan, dan seluruh teks serta foto terbaca sangat jelas di gambar JPG yang diunduh.
+
+### 3. File yang Akan Diubah:
+1. `public/index.html` : Struktur kolom gambar di `#printTable`, penggantian tombol "Export JPG", dan pemanggilan `html2canvas.min.js`.
+2. `public/app.js` : Logika penyisipan thumbnail foto di `renderDetail` dan handler unduh gambar JPG resolusi tinggi.
+3. `public/style.css` : Styling kolom gambar di tabel laporan dan optimalisasi canvas putih.
+4. `public/html2canvas.min.js` : Aset pustaka lokal konversi DOM ke kanvas gambar.
+
+### 4. Status Eksekusi:
+- [x] Analisis kebutuhan & dokumen contoh hasil laporan dari pengguna.
+- [x] Pemasangan pustaka `html2canvas.min.js` ke folder `public/` (offline-ready, zero CDN dependency).
+- [x] Penyusunan draf konsep & konfirmasi persetujuan pengguna.
+- [x] Implementasi kolom GAMBAR pada `#printTable` di detail laporan inspeksi (`public/index.html`, `public/app.js`, `public/style.css`).
+- [x] Implementasi fitur **Export JPG** (2x Retina scale, 95% JPEG quality) menggantikan Cetak PDF.
+- [x] Perbaikan query Dashboard (`api/index.js`): menghitung akhir bulan secara dinamis (`new Date(year, month + 1, 0).getDate()`) untuk mencegah error Postgres out of range tanggal 31 pada bulan 30 hari (November).
+- [x] Verifikasi lokal & deployment produksi Vercel (`v2.3.0`). (STATUS: SELESAI DITERAPKAN)
