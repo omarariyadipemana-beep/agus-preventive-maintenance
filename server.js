@@ -294,6 +294,11 @@ if (db) {
 // API ROUTES
 // ============================================================
 
+// HEALTHCHECK: Public endpoint for Docker and monitoring
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', uptime: process.uptime(), version: '2.7.0' });
+});
+
 // AUTH: Verify PIN (public endpoint)
 app.post('/api/auth/verify-pin', pinLimiter, (req, res) => {
   const { pin } = req.body;
